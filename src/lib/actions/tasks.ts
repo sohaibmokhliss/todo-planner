@@ -1,22 +1,37 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
 
-type Task = Database['public']['Tables']['tasks']['Row']
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 type TaskUpdate = Database['public']['Tables']['tasks']['Update']
 
-export async function getTasks() {
+type AuthenticatedContext =
+  | {
+      supabase: Awaited<ReturnType<typeof createClient>>
+      userId: string
+    }
+  | { error: string }
+
+async function getAuthenticatedContext(): Promise<AuthenticatedContext> {
+  const session = await getSession()
+
+  if (!session) {
+    return { error: 'Not authenticated' }
+  }
+
   const supabase = await createClient()
+  return { supabase, userId: session.userId }
+}
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Temporarily use a mock user ID for development
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+export async function getTasks() {
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')
@@ -33,13 +48,11 @@ export async function getTasks() {
 }
 
 export async function getTaskById(id: string) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')
@@ -56,13 +69,11 @@ export async function getTaskById(id: string) {
 }
 
 export async function createTask(taskData: Omit<TaskInsert, 'user_id'>) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')
@@ -82,15 +93,13 @@ export async function createTask(taskData: Omit<TaskInsert, 'user_id'>) {
 }
 
 export async function updateTask(id: string, taskData: TaskUpdate) {
-  const supabase = await createClient()
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
-
-  const { data, error} = await supabase
+  const { data, error } = await supabase
     .from('tasks')
     .update(taskData)
     .eq('id', id)
@@ -107,13 +116,11 @@ export async function updateTask(id: string, taskData: TaskUpdate) {
 }
 
 export async function deleteTask(id: string) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { error } = await supabase
     .from('tasks')
@@ -130,13 +137,11 @@ export async function deleteTask(id: string) {
 }
 
 export async function toggleTaskCompletion(id: string, currentStatus: 'todo' | 'in_progress' | 'done') {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const newStatus = currentStatus === 'done' ? 'todo' : 'done'
   const completedAt = newStatus === 'done' ? new Date().toISOString() : null
@@ -161,13 +166,11 @@ export async function toggleTaskCompletion(id: string, currentStatus: 'todo' | '
 }
 
 export async function getIncompleteTasks() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')
@@ -185,13 +188,11 @@ export async function getIncompleteTasks() {
 }
 
 export async function getCompletedTasks() {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')

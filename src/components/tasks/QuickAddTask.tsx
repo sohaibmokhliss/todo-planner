@@ -5,10 +5,11 @@ import { Plus } from 'lucide-react'
 import { useCreateTask } from '@/hooks/useTasks'
 
 interface QuickAddTaskProps {
+  projectId?: string
   onSuccess?: () => void
 }
 
-export function QuickAddTask({ onSuccess }: QuickAddTaskProps) {
+export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
   const [title, setTitle] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const createTask = useCreateTask()
@@ -20,6 +21,7 @@ export function QuickAddTask({ onSuccess }: QuickAddTaskProps) {
       await createTask.mutateAsync({
         title: title.trim(),
         priority: 'medium',
+        project_id: projectId || null,
       })
 
       setTitle('')

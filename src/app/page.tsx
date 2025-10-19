@@ -1,9 +1,9 @@
-import { getUser } from '@/lib/actions/auth'
+import { getCurrentUser } from '@/lib/actions/auth'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export default async function Home() {
-  const user = await getUser()
+  const user = await getCurrentUser()
 
   if (user) {
     redirect('/app')

@@ -84,7 +84,7 @@ export default function UpcomingPage() {
                 if (!tasks || tasks.length === 0) return null
 
                 const date = new Date(dateKey)
-                const dayLabel = format(date, 'EEEE, MMM d')
+                const dayLabel = format(date, 'EEEE, dd/MM/yyyy')
 
                 return (
                   <div key={dateKey} className="space-y-3">
@@ -102,7 +102,7 @@ export default function UpcomingPage() {
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([dateKey, tasks]) => {
                   const date = new Date(dateKey)
-                  const dayLabel = format(date, 'EEEE, MMM d, yyyy')
+                  const dayLabel = format(date, 'EEEE, dd/MM/yyyy')
 
                   return (
                     <div key={dateKey} className="space-y-3">

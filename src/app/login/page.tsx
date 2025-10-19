@@ -2,13 +2,14 @@
 
 import { signIn } from '@/lib/actions/auth'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -19,11 +20,15 @@ export default function LoginPage() {
       setError(result.error)
       setLoading(false)
     } else if (result?.success) {
-      console.log('Login successful, redirecting to /app')
-      // Wait a bit for cookies to be set, then redirect
-      await new Promise(resolve => setTimeout(resolve, 500))
-      console.log('About to redirect...')
-      window.location.href = '/app'
+      console.log('Login successful, redirecting to application')
+      const requestedPath = searchParams.get('redirect')
+      const destination =
+        requestedPath && requestedPath.startsWith('/') ? requestedPath : '/app'
+
+      // Allow auth cookies to settle before navigation
+      await new Promise(resolve => setTimeout(resolve, 200))
+      router.replace(destination)
+      router.refresh()
     } else {
       setError('Unexpected response from server')
       setLoading(false)
@@ -46,19 +51,19 @@ export default function LoginPage() {
           <form action={handleSubmit} className="space-y-6">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
-                Email address
+                Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
+                id="username"
+                name="username"
+                type="text"
+                autoComplete="username"
                 required
                 className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-500 sm:text-sm"
-                placeholder="you@example.com"
+                placeholder="johndoe"
               />
             </div>
 
@@ -95,7 +100,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 space-y-4 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don&apos;t have an account?{' '}
               <Link
@@ -103,6 +108,14 @@ export default function LoginPage() {
                 className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
               >
                 Sign up
+              </Link>
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                Forgot your password?
               </Link>
             </p>
           </div>

@@ -1,10 +1,14 @@
-import { getUser, signOut } from '@/lib/actions/auth'
+import { getCurrentUser, signOut } from '@/lib/actions/auth'
+import { redirect } from 'next/navigation'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getUser()
+  const user = await getCurrentUser()
 
-  // Temporarily allow access without auth for testing
-  const displayEmail = user?.email || 'demo@example.com (no auth)'
+  if (!user) {
+    redirect('/login')
+  }
+
+  const displayName = user.full_name || user.username
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
@@ -13,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Todo Planner</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600 dark:text-gray-400">{displayEmail}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">@{user.username}</span>
             {user && (
               <form action={signOut}>
                 <button

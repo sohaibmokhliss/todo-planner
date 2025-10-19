@@ -1,50 +1,48 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { verifyAccessToken } from '@/lib/auth/jwt'
+
+const SESSION_COOKIE_NAME = 'session'
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
+  const pathname = request.nextUrl.pathname
+  const search = request.nextUrl.search
+  const isProtectedRoute = pathname.startsWith('/app')
+  const isAuthRoute = pathname === '/login' || pathname === '/signup'
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  // Get session token from cookies
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value
+
+  // Verify the token
+  let user: { userId: string; username: string } | null = null
+  if (token) {
+    const payload = await verifyAccessToken(token)
+    if (payload?.userId && payload?.username) {
+      user = {
+        userId: payload.userId,
+        username: payload.username,
+      }
     }
-  )
+  }
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let response: NextResponse
 
-  // Protected routes - temporarily disabled for debugging
-  // if (!user && request.nextUrl.pathname.startsWith('/app')) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/login'
-  //   return NextResponse.redirect(url)
-  // }
+  // Redirect logic
+  if (!user && isProtectedRoute) {
+    // User is not authenticated and trying to access protected route
+    const redirectTarget = `${pathname}${search}`
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', redirectTarget)
+    response = NextResponse.redirect(loginUrl)
+  } else if (user && isAuthRoute) {
+    // User is authenticated and trying to access auth pages
+    const redirectParam = request.nextUrl.searchParams.get('redirect')
+    const safeRedirect =
+      redirectParam && redirectParam.startsWith('/') ? redirectParam : '/app'
+    response = NextResponse.redirect(new URL(safeRedirect, request.url))
+  } else {
+    // Allow the request to proceed
+    response = NextResponse.next()
+  }
 
-  // Redirect to app if authenticated and on auth pages - temporarily disabled
-  // if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-  //   const url = request.nextUrl.clone()
-  //   url.pathname = '/app'
-  //   return NextResponse.redirect(url)
-  // }
-
-  return supabaseResponse
+  return response
 }

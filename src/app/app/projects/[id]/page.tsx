@@ -134,7 +134,7 @@ export default function ProjectDetailPage() {
 
           <div className="space-y-6">
             {/* Quick add task */}
-            <QuickAddTask />
+            <QuickAddTask projectId={projectId} />
 
             {tasksLoading ? (
               <div className="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800">

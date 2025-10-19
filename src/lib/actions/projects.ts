@@ -1,21 +1,37 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getSession } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
 
-type Project = Database['public']['Tables']['projects']['Row']
 type ProjectInsert = Database['public']['Tables']['projects']['Insert']
 type ProjectUpdate = Database['public']['Tables']['projects']['Update']
 
-export async function getProjects() {
+type AuthenticatedContext =
+  | {
+      supabase: Awaited<ReturnType<typeof createClient>>
+      userId: string
+    }
+  | { error: string }
+
+async function getAuthenticatedContext(): Promise<AuthenticatedContext> {
+  const session = await getSession()
+
+  if (!session) {
+    return { error: 'Not authenticated' }
+  }
+
   const supabase = await createClient()
+  return { supabase, userId: session.userId }
+}
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+export async function getProjects() {
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('projects')
@@ -32,13 +48,11 @@ export async function getProjects() {
 }
 
 export async function getProjectById(id: string) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('projects')
@@ -55,13 +69,11 @@ export async function getProjectById(id: string) {
 }
 
 export async function createProject(projectData: Omit<ProjectInsert, 'user_id'>) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('projects')
@@ -81,13 +93,11 @@ export async function createProject(projectData: Omit<ProjectInsert, 'user_id'>)
 }
 
 export async function updateProject(id: string, projectData: ProjectUpdate) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('projects')
@@ -106,13 +116,11 @@ export async function updateProject(id: string, projectData: ProjectUpdate) {
 }
 
 export async function deleteProject(id: string) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { error } = await supabase
     .from('projects')
@@ -129,13 +137,11 @@ export async function deleteProject(id: string) {
 }
 
 export async function getProjectTasks(projectId: string) {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const userId = user?.id || '00000000-0000-0000-0000-000000000000'
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
 
   const { data, error } = await supabase
     .from('tasks')

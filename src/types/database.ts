@@ -115,6 +115,7 @@ export interface Database {
         Row: {
           id: string
           task_id: string
+          parent_id: string | null
           title: string
           completed: boolean
           position: number
@@ -124,6 +125,7 @@ export interface Database {
         Insert: {
           id?: string
           task_id: string
+          parent_id?: string | null
           title: string
           completed?: boolean
           position?: number
@@ -133,6 +135,7 @@ export interface Database {
         Update: {
           id?: string
           task_id?: string
+          parent_id?: string | null
           title?: string
           completed?: boolean
           position?: number

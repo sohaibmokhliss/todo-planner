@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { X } from 'lucide-react'
+import { SubtaskList } from './SubtaskList'
 import type { Database } from '@/types/database'
 
 type Task = Database['public']['Tables']['tasks']['Row']
@@ -169,6 +170,11 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
                 className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
             </div>
+          </div>
+
+          {/* Subtasks */}
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+            <SubtaskList taskId={task.id} />
           </div>
 
           {/* Error message */}

@@ -6,7 +6,7 @@ import { useCompletedTasks } from '@/hooks/useTasks'
 import { TaskList } from '@/components/tasks/TaskList'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { Sidebar } from '@/components/navigation/Sidebar'
-import { format, isToday, isYesterday, startOfWeek, endOfWeek } from 'date-fns'
+import { isToday, isYesterday, startOfWeek, endOfWeek } from 'date-fns'
 
 export default function CompletedPage() {
   const [showTaskForm, setShowTaskForm] = useState(false)

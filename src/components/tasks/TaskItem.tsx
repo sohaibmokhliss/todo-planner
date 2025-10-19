@@ -1,15 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, isPast, isToday } from 'date-fns'
-import { Trash2, Calendar, Flag, Edit2, Circle, CheckCircle2, Clock } from 'lucide-react'
+import { Trash2, Calendar, Flag, Edit2, Circle, CheckCircle2, Clock, ChevronRight, ChevronDown, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useDeleteTask, useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { TaskEditModal } from './TaskEditModal'
+import { SubtaskItem } from './SubtaskItem'
+import { getSubtasksByTaskId, createSubtask } from '@/lib/actions/subtasks'
 import type { Database } from '@/types/database'
 
 type Task = Database['public']['Tables']['tasks']['Row']
+type Subtask = Database['public']['Tables']['subtasks']['Row']
 
 interface TaskItemProps {
   task: Task
@@ -31,6 +34,11 @@ export function TaskItem({ task }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [subtasks, setSubtasks] = useState<Subtask[]>([])
+  const [showAddSubtask, setShowAddSubtask] = useState(false)
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [isAddingSubtask, setIsAddingSubtask] = useState(false)
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const { data: projects } = useProjects()
@@ -40,6 +48,18 @@ export function TaskItem({ task }: TaskItemProps) {
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isCompleted
   const isDueToday = task.due_date && isToday(new Date(task.due_date))
   const project = projects?.find(p => p.id === task.project_id)
+
+  useEffect(() => {
+    // Load subtasks on mount to show count
+    const loadSubtasks = async () => {
+      const { data, error } = await getSubtasksByTaskId(task.id)
+      if (data && !error) {
+        // Only show top-level subtasks (those without a parent)
+        setSubtasks(data.filter(s => !s.parent_id))
+      }
+    }
+    loadSubtasks()
+  }, [task.id])
 
   const handleStatusChange = async (newStatus: 'todo' | 'in_progress' | 'done') => {
     try {
@@ -69,18 +89,69 @@ export function TaskItem({ task }: TaskItemProps) {
     }
   }
 
+  const handleAddSubtask = async () => {
+    if (!newSubtaskTitle.trim()) return
+
+    setIsAddingSubtask(true)
+    try {
+      const { data, error } = await createSubtask({
+        task_id: task.id,
+        parent_id: null,
+        title: newSubtaskTitle.trim(),
+        completed: false,
+      })
+
+      if (data && !error) {
+        setSubtasks([...subtasks, data])
+        setNewSubtaskTitle('')
+        setShowAddSubtask(false)
+      }
+    } catch (error) {
+      console.error('Failed to create subtask:', error)
+    } finally {
+      setIsAddingSubtask(false)
+    }
+  }
+
+  const handleSubtaskKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleAddSubtask()
+    } else if (e.key === 'Escape') {
+      setShowAddSubtask(false)
+      setNewSubtaskTitle('')
+    }
+  }
+
+  const toggleExpanded = () => {
+    setIsExpanded(!isExpanded)
+  }
+
+  const completedSubtasks = subtasks.filter(s => s.completed).length
+  const totalSubtasks = subtasks.length
+
   return (
     <>
-      <div
-        className={`group relative rounded-lg border bg-white p-4 transition-all hover:shadow-md dark:bg-gray-800 ${
-          isCompleted
-            ? 'border-gray-200 opacity-75 dark:border-gray-700'
-            : 'border-gray-200 dark:border-gray-700'
-        } ${isDeleting ? 'opacity-50' : ''}`}
-      >
-        <div className="flex items-start gap-3">
-        {/* Status button */}
-        <div className="relative">
+      <div className={`${isDeleting ? 'opacity-50' : ''}`}>
+        <div
+          className={`group relative rounded-lg border bg-white p-4 transition-all hover:shadow-md dark:bg-gray-800 ${
+            isCompleted
+              ? 'border-gray-200 opacity-75 dark:border-gray-700'
+              : 'border-gray-200 dark:border-gray-700'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {/* Expand/Collapse button */}
+            <button
+              onClick={toggleExpanded}
+              className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+              title={isExpanded ? "Collapse subtasks" : "Expand subtasks"}
+            >
+              {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            </button>
+
+            {/* Status button */}
+            <div className="relative">
           <button
             onClick={() => setShowStatusMenu(!showStatusMenu)}
             disabled={updateTask.isPending || isDeleting}
@@ -194,37 +265,132 @@ export function TaskItem({ task }: TaskItemProps) {
                 }`}
               >
                 <Calendar size={12} />
-                {format(new Date(task.due_date), 'MMM d')}
+                {format(new Date(task.due_date), 'dd/MM/yyyy')}
                 {isOverdue && ' (Overdue)'}
                 {isDueToday && ' (Today)'}
+              </span>
+            )}
+
+            {/* Subtasks count */}
+            {totalSubtasks > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+                {completedSubtasks}/{totalSubtasks} subtasks
               </span>
             )}
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            onClick={() => setIsEditing(true)}
-            className="rounded p-1 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
-            title="Edit task"
-          >
-            <Edit2 size={16} />
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting || deleteTask.isPending}
-            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-            title="Delete task"
-          >
-            <Trash2 size={16} />
-          </button>
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <button
+                onClick={() => {
+                  setIsExpanded(true)
+                  setShowAddSubtask(true)
+                }}
+                className="rounded p-1 text-gray-400 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                title="Add subtask"
+              >
+                <Plus size={16} />
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="rounded p-1 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
+                title="Edit task"
+              >
+                <Edit2 size={16} />
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting || deleteTask.isPending}
+                className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                title="Delete task"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    {/* Edit modal */}
-    {isEditing && <TaskEditModal task={task} onClose={() => setIsEditing(false)} />}
-  </>
+        {/* Subtasks tree view */}
+        {isExpanded && (
+          <div className="ml-9 mt-3 space-y-2">
+            {/* Quick add subtask form */}
+            {showAddSubtask && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800">
+                  <span className="text-gray-400 dark:text-gray-500">└─</span>
+                  <input
+                    type="text"
+                    value={newSubtaskTitle}
+                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                    onKeyDown={handleSubtaskKeyDown}
+                    placeholder="New subtask..."
+                    disabled={isAddingSubtask}
+                    autoFocus
+                    className="flex-1 border-0 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-gray-100 dark:placeholder-gray-500"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddSubtask}
+                  disabled={isAddingSubtask || !newSubtaskTitle.trim()}
+                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddSubtask(false)
+                    setNewSubtaskTitle('')
+                  }}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Subtasks list */}
+            {subtasks.length > 0 && (
+              <div className="space-y-1.5">
+                {subtasks.map((subtask, index) => (
+                  <div key={subtask.id} className="flex items-start gap-2">
+                    <span className="mt-2 text-gray-400 dark:text-gray-500">
+                      {index === subtasks.length - 1 ? '└─' : '├─'}
+                    </span>
+                    <div className="flex-1">
+                      <SubtaskItem
+                        subtask={subtask}
+                        onUpdate={async () => {
+                          const { data, error } = await getSubtasksByTaskId(task.id)
+                          if (data && !error) {
+                            setSubtasks(data.filter(s => !s.parent_id))
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!showAddSubtask && subtasks.length === 0 && (
+              <button
+                onClick={() => setShowAddSubtask(true)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+              >
+                <span className="text-gray-400 dark:text-gray-500">└─</span>
+                <Plus size={14} />
+                Add first subtask
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Edit modal */}
+      {isEditing && <TaskEditModal task={task} onClose={() => setIsEditing(false)} />}
+    </>
   )
 }
