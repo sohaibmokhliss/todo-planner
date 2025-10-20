@@ -5,10 +5,13 @@ import {
   getTasks,
   getIncompleteTasks,
   getCompletedTasks,
+  getTasksByTags,
+  searchTasks,
   createTask,
   updateTask,
   deleteTask,
   toggleTaskCompletion,
+  type SearchFilters,
 } from '@/lib/actions/tasks'
 import type { Database } from '@/types/database'
 
@@ -119,5 +122,33 @@ export function useToggleTaskCompletion() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
+  })
+}
+
+export function useTasksByTags(tagIds: string[], matchAll: boolean = false) {
+  return useQuery({
+    queryKey: ['tasks', 'by-tags', tagIds.sort(), matchAll],
+    queryFn: async () => {
+      const result = await getTasksByTags(tagIds, matchAll)
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      return result.data
+    },
+    enabled: tagIds.length > 0,
+  })
+}
+
+export function useSearchTasks(filters: SearchFilters) {
+  return useQuery({
+    queryKey: ['tasks', 'search', filters],
+    queryFn: async () => {
+      const result = await searchTasks(filters)
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      return result.data
+    },
+    enabled: !!(filters.query || filters.projectId || filters.tagIds?.length || filters.status || filters.priority || filters.dateFrom || filters.dateTo),
   })
 }

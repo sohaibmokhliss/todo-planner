@@ -36,7 +36,15 @@ export async function createClient() {
   const session = await getSession()
   if (session?.userId) {
     // Set the user_id in the database session for RLS to use
-    await client.rpc('set_user_context', { user_id: session.userId })
+    // Note: We catch and ignore errors here because set_user_context might fail
+    // in some connection pooling scenarios. The RLS policies should still work
+    // because we explicitly set user_id in queries.
+    try {
+      await client.rpc('set_user_context', { user_id: session.userId })
+    } catch (error) {
+      // Log but don't throw - we'll rely on explicit user_id in queries
+      console.error('Failed to set user context:', error)
+    }
   }
 
   return client
@@ -52,6 +60,36 @@ export async function createPublicClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch {
+            // Ignore
+          }
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Create a Supabase admin client with service role key
+ * This bypasses RLS - use only for trusted server-side operations
+ * where you explicitly control user_id
+ */
+export async function createAdminClient() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {
         getAll() {

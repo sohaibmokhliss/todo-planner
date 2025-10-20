@@ -1,25 +1,52 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useCreateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
+import { useSetTaskTags } from '@/hooks/useTags'
+import { TagSelector } from '@/components/tags/TagSelector'
 import { X } from 'lucide-react'
+import type { Database } from '@/types/database'
+
+type Tag = Database['public']['Tables']['tags']['Row']
 
 interface TaskFormProps {
   onClose: () => void
   onSuccess?: () => void
+  defaultTags?: Tag[]
 }
 
-export function TaskForm({ onClose, onSuccess }: TaskFormProps) {
+export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium')
   const [status, setStatus] = useState<'todo' | 'in_progress' | 'done'>('todo')
   const [dueDate, setDueDate] = useState('')
   const [projectId, setProjectId] = useState<string>('')
+  const [selectedTags, setSelectedTags] = useState<Tag[]>(defaultTags)
+
+  const defaultTagIdsKey = useMemo(() => {
+    if (defaultTags.length === 0) return ''
+    return defaultTags
+      .map(tag => tag.id)
+      .sort()
+      .join(',')
+  }, [defaultTags])
+  const lastAppliedDefaultTagIds = useRef(defaultTagIdsKey)
 
   const createTask = useCreateTask()
   const { data: projects } = useProjects()
+  const setTaskTags = useSetTaskTags()
+
+  // Sync selected tags only when the default tag ids change, avoiding resets on identical arrays
+  useEffect(() => {
+    if (defaultTagIdsKey === lastAppliedDefaultTagIds.current) {
+      return
+    }
+
+    lastAppliedDefaultTagIds.current = defaultTagIdsKey
+    setSelectedTags(defaultTags)
+  }, [defaultTagIdsKey, defaultTags])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +54,7 @@ export function TaskForm({ onClose, onSuccess }: TaskFormProps) {
     if (!title.trim()) return
 
     try {
-      await createTask.mutateAsync({
+      const newTask = await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || null,
         priority,
@@ -36,12 +63,21 @@ export function TaskForm({ onClose, onSuccess }: TaskFormProps) {
         project_id: projectId || null,
       })
 
+      // Assign tags if any are selected
+      if (newTask && selectedTags.length > 0) {
+        await setTaskTags.mutateAsync({
+          taskId: newTask.id,
+          tagIds: selectedTags.map(tag => tag.id),
+        })
+      }
+
       setTitle('')
       setDescription('')
       setPriority('medium')
       setStatus('todo')
       setDueDate('')
       setProjectId('')
+      setSelectedTags([])
       onSuccess?.()
       onClose()
     } catch (error) {
@@ -165,6 +201,12 @@ export function TaskForm({ onClose, onSuccess }: TaskFormProps) {
               />
             </div>
           </div>
+
+          {/* Tags */}
+          <TagSelector
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+          />
 
           {/* Error message */}
           {createTask.isError && (

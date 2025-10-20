@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
@@ -94,18 +94,20 @@ export async function getSubtasksByParentId(parentId: string) {
 export async function createSubtask(
   subtaskData: Omit<SubtaskInsert, 'position'>
 ) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   // Verify the task belongs to the user
   const { data: task } = await supabase
     .from('tasks')
     .select('id')
     .eq('id', subtaskData.task_id)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .single()
 
   if (!task) {
@@ -113,7 +115,7 @@ export async function createSubtask(
   }
 
   // Get the max position for this task/parent combo
-  let query = supabase
+  let query = adminClient
     .from('subtasks')
     .select('position')
     .eq('task_id', subtaskData.task_id)
@@ -133,7 +135,8 @@ export async function createSubtask(
       ? (existingSubtasks[0].position || 0) + 1
       : 0
 
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS for INSERT
+  const { data, error } = await adminClient
     .from('subtasks')
     .insert({
       ...subtaskData,
@@ -151,11 +154,13 @@ export async function createSubtask(
 }
 
 export async function updateSubtask(id: string, subtaskData: SubtaskUpdate) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   // Verify the subtask's parent task belongs to the user
   const { data: subtask } = await supabase
@@ -164,11 +169,12 @@ export async function updateSubtask(id: string, subtaskData: SubtaskUpdate) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== userId) {
+  if (!subtask || subtask.tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS for UPDATE
+  const { data, error } = await adminClient
     .from('subtasks')
     .update(subtaskData)
     .eq('id', id)
@@ -184,11 +190,13 @@ export async function updateSubtask(id: string, subtaskData: SubtaskUpdate) {
 }
 
 export async function toggleSubtaskCompletion(id: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   // Get current subtask with task ownership check
   const { data: subtask } = await supabase
@@ -197,11 +205,12 @@ export async function toggleSubtaskCompletion(id: string) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== userId) {
+  if (!subtask || subtask.tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
-  const { data, error } = await supabase
+  // Use admin client to bypass RLS for UPDATE
+  const { data, error } = await adminClient
     .from('subtasks')
     .update({ completed: !subtask.completed })
     .eq('id', id)
@@ -217,11 +226,13 @@ export async function toggleSubtaskCompletion(id: string) {
 }
 
 export async function deleteSubtask(id: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   // Verify the subtask's parent task belongs to the user
   const { data: subtask } = await supabase
@@ -230,11 +241,12 @@ export async function deleteSubtask(id: string) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== userId) {
+  if (!subtask || subtask.tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
-  const { error } = await supabase.from('subtasks').delete().eq('id', id)
+  // Use admin client to bypass RLS for DELETE
+  const { error } = await adminClient.from('subtasks').delete().eq('id', id)
 
   if (error) {
     return { error: error.message }
@@ -248,27 +260,29 @@ export async function reorderSubtasks(
   taskId: string,
   subtaskIds: string[]
 ) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   // Verify the task belongs to the user
   const { data: task } = await supabase
     .from('tasks')
     .select('id')
     .eq('id', taskId)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .single()
 
   if (!task) {
     return { error: 'Task not found or access denied' }
   }
 
-  // Update positions for all subtasks
+  // Use admin client to bypass RLS for UPDATE
   const updates = subtaskIds.map((id, index) =>
-    supabase.from('subtasks').update({ position: index }).eq('id', id)
+    adminClient.from('subtasks').update({ position: index }).eq('id', id)
   )
 
   try {

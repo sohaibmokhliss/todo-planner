@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Inbox, Calendar, CalendarDays, CheckCircle2, FolderOpen, Plus } from 'lucide-react'
+import { Inbox, Calendar, CalendarDays, CheckCircle2, FolderOpen, Plus, Tag } from 'lucide-react'
 import { useState } from 'react'
 import { useTasks } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
+import { useTags } from '@/hooks/useTags'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { isToday, isFuture, startOfDay } from 'date-fns'
 
@@ -14,6 +15,7 @@ export function Sidebar() {
   const [showProjectForm, setShowProjectForm] = useState(false)
   const { data: allTasks } = useTasks()
   const { data: projects } = useProjects()
+  const { data: tags } = useTags()
 
   // Calculate task counts
   const inboxCount = allTasks?.filter(task => task.status !== 'done').length || 0
@@ -97,6 +99,64 @@ export function Sidebar() {
           )
         })}
       </nav>
+
+      <div className="mt-8">
+        <div className="mb-2 flex items-center justify-between px-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            Tags
+          </h3>
+        </div>
+        <div className="space-y-1">
+          <Link
+            href="/app/tags"
+            className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              pathname === '/app/tags'
+                ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Tag size={16} />
+              <span>Manage Tags</span>
+            </div>
+            {tags && tags.length > 0 && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {tags.length}
+              </span>
+            )}
+          </Link>
+          {tags && tags.length > 0 && (
+            <div className="ml-2 space-y-0.5">
+              {tags.slice(0, 5).map((tag) => {
+                const tagSlug = tag.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+                return (
+                  <Link
+                    key={tag.id}
+                    href={`/app/tags/${tagSlug}`}
+                    className="flex items-center gap-2 rounded px-3 py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: tag.color }}
+                    />
+                    <span className="truncate text-gray-600 dark:text-gray-400">
+                      {tag.name}
+                    </span>
+                  </Link>
+                )
+              })}
+              {tags.length > 5 && (
+                <Link
+                  href="/app/tags"
+                  className="block px-3 py-1 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  +{tags.length - 5} more
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="mt-8">
         <div className="mb-2 flex items-center justify-between px-3">

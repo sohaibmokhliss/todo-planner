@@ -6,6 +6,7 @@ import { Trash2, Calendar, Flag, Edit2, Circle, CheckCircle2, Clock, ChevronRigh
 import Link from 'next/link'
 import { useDeleteTask, useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
+import { useTaskTags } from '@/hooks/useTags'
 import { TaskEditModal } from './TaskEditModal'
 import { SubtaskItem } from './SubtaskItem'
 import { getSubtasksByTaskId, createSubtask } from '@/lib/actions/subtasks'
@@ -42,6 +43,7 @@ export function TaskItem({ task }: TaskItemProps) {
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
   const { data: projects } = useProjects()
+  const { data: taskTags } = useTaskTags(task.id)
 
   const isCompleted = task.status === 'done'
   const isInProgress = task.status === 'in_progress'
@@ -130,16 +132,24 @@ export function TaskItem({ task }: TaskItemProps) {
   const completedSubtasks = subtasks.filter(s => s.completed).length
   const totalSubtasks = subtasks.length
 
+  const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0
+
   return (
     <>
       <div className={`${isDeleting ? 'opacity-50' : ''}`}>
         <div
           className={`group relative rounded-lg border bg-white p-4 transition-all hover:shadow-md dark:bg-gray-800 ${
             isCompleted
-              ? 'border-gray-200 opacity-75 dark:border-gray-700'
+              ? 'border-green-300 bg-green-50/30 dark:border-green-800 dark:bg-green-900/10'
               : 'border-gray-200 dark:border-gray-700'
           }`}
         >
+          {/* Completion celebration indicator */}
+          {isCompleted && (
+            <div className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white shadow-lg animate-in zoom-in duration-300">
+              <CheckCircle2 size={20} />
+            </div>
+          )}
           <div className="flex items-start gap-3">
             {/* Expand/Collapse button */}
             <button
@@ -155,21 +165,21 @@ export function TaskItem({ task }: TaskItemProps) {
           <button
             onClick={() => setShowStatusMenu(!showStatusMenu)}
             disabled={updateTask.isPending || isDeleting}
-            className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+            className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full transition-all ${
               isCompleted
-                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                ? 'bg-green-500 text-white shadow-md hover:bg-green-600 hover:shadow-lg scale-110'
                 : isInProgress
-                  ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'
-                  : 'border-2 border-gray-300 hover:border-indigo-500 dark:border-gray-600 dark:hover:border-indigo-400'
+                  ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400'
+                  : 'border-2 border-gray-300 hover:border-indigo-500 hover:bg-indigo-50 dark:border-gray-600 dark:hover:border-indigo-400 dark:hover:bg-indigo-900/20'
             }`}
             title="Change status"
           >
             {isCompleted ? (
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={18} className="animate-in zoom-in duration-300" />
             ) : isInProgress ? (
-              <Clock size={14} />
+              <Clock size={15} />
             ) : (
-              <Circle size={14} />
+              <Circle size={15} />
             )}
           </button>
 
@@ -204,12 +214,13 @@ export function TaskItem({ task }: TaskItemProps) {
         {/* Task content */}
         <div className="flex-1 min-w-0">
           <h3
-            className={`text-sm font-medium ${
+            className={`text-base font-semibold transition-all ${
               isCompleted
-                ? 'text-gray-500 line-through dark:text-gray-400'
+                ? 'text-green-700 line-through dark:text-green-400'
                 : 'text-gray-900 dark:text-white'
             }`}
           >
+            {isCompleted && <span className="mr-2 text-lg">✓</span>}
             {task.title}
           </h3>
 
@@ -271,13 +282,66 @@ export function TaskItem({ task }: TaskItemProps) {
               </span>
             )}
 
-            {/* Subtasks count */}
+            {/* Subtasks count with progress indicator */}
             {totalSubtasks > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                completedSubtasks === totalSubtasks
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+              }`}>
+                {completedSubtasks === totalSubtasks ? (
+                  <CheckCircle2 size={12} className="text-green-600 dark:text-green-400" />
+                ) : (
+                  <Circle size={12} className="text-indigo-600 dark:text-indigo-400" />
+                )}
                 {completedSubtasks}/{totalSubtasks} subtasks
               </span>
             )}
+
+            {/* Tags */}
+            {taskTags && taskTags.length > 0 && taskTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                style={{
+                  backgroundColor: `${tag.color}20`,
+                  color: tag.color,
+                  borderWidth: '1px',
+                  borderColor: `${tag.color}40`,
+                }}
+              >
+                {tag.name}
+              </span>
+            ))}
           </div>
+
+          {/* Progress bar for subtasks */}
+          {totalSubtasks > 0 && (
+            <div className="mt-3 space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-600 dark:text-gray-400 font-medium">
+                  Subtask Progress
+                </span>
+                <span className={`font-semibold ${
+                  completedSubtasks === totalSubtasks
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-indigo-600 dark:text-indigo-400'
+                }`}>
+                  {Math.round(progressPercentage)}%
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                <div
+                  className={`h-full transition-all duration-500 ease-out ${
+                    completedSubtasks === totalSubtasks
+                      ? 'bg-gradient-to-r from-green-500 to-green-600'
+                      : 'bg-gradient-to-r from-indigo-500 to-indigo-600'
+                  }`}
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
             {/* Action buttons */}
@@ -316,9 +380,9 @@ export function TaskItem({ task }: TaskItemProps) {
           <div className="ml-9 mt-3 space-y-2">
             {/* Quick add subtask form */}
             {showAddSubtask && (
-              <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-800">
-                  <span className="text-gray-400 dark:text-gray-500">└─</span>
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex-1 flex items-center gap-2 rounded-lg border-2 border-indigo-300 bg-white px-3 py-2.5 shadow-sm dark:border-indigo-600 dark:bg-gray-800">
+                  <span className="text-indigo-400 dark:text-indigo-500">└─</span>
                   <input
                     type="text"
                     value={newSubtaskTitle}
@@ -334,9 +398,9 @@ export function TaskItem({ task }: TaskItemProps) {
                   type="button"
                   onClick={handleAddSubtask}
                   disabled={isAddingSubtask || !newSubtaskTitle.trim()}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                  className="rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-green-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 dark:bg-green-500 dark:hover:bg-green-600"
                 >
-                  Add
+                  {isAddingSubtask ? 'Adding...' : 'Add'}
                 </button>
                 <button
                   type="button"
@@ -344,7 +408,7 @@ export function TaskItem({ task }: TaskItemProps) {
                     setShowAddSubtask(false)
                     setNewSubtaskTitle('')
                   }}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -378,10 +442,10 @@ export function TaskItem({ task }: TaskItemProps) {
             {!showAddSubtask && subtasks.length === 0 && (
               <button
                 onClick={() => setShowAddSubtask(true)}
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
+                className="flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50/50 px-3 py-2 text-sm font-medium text-gray-600 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400"
               >
                 <span className="text-gray-400 dark:text-gray-500">└─</span>
-                <Plus size={14} />
+                <Plus size={16} />
                 Add first subtask
               </button>
             )}

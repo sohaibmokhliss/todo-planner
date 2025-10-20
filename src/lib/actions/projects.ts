@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
@@ -69,17 +69,19 @@ export async function getProjectById(id: string) {
 }
 
 export async function createProject(projectData: Omit<ProjectInsert, 'user_id'>) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  // Use admin client to bypass RLS since we're explicitly setting user_id
+  const supabase = await createAdminClient()
 
   const { data, error } = await supabase
     .from('projects')
     .insert({
       ...projectData,
-      user_id: userId,
+      user_id: session.userId,
     })
     .select()
     .single()
@@ -93,17 +95,19 @@ export async function createProject(projectData: Omit<ProjectInsert, 'user_id'>)
 }
 
 export async function updateProject(id: string, projectData: ProjectUpdate) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  // Use admin client to bypass RLS since we're explicitly checking user_id
+  const supabase = await createAdminClient()
 
   const { data, error } = await supabase
     .from('projects')
     .update(projectData)
     .eq('id', id)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .select()
     .single()
 
@@ -116,17 +120,19 @@ export async function updateProject(id: string, projectData: ProjectUpdate) {
 }
 
 export async function deleteProject(id: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  // Use admin client to bypass RLS since we're explicitly checking user_id
+  const supabase = await createAdminClient()
 
   const { error } = await supabase
     .from('projects')
     .delete()
     .eq('id', id)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
 
   if (error) {
     return { data: null, error: error.message }

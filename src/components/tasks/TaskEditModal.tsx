@@ -1,13 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
+import { useTaskTags, useSetTaskTags } from '@/hooks/useTags'
 import { X } from 'lucide-react'
 import { SubtaskList } from './SubtaskList'
+import { TagSelector } from '@/components/tags/TagSelector'
 import type { Database } from '@/types/database'
 
 type Task = Database['public']['Tables']['tasks']['Row']
+type Tag = Database['public']['Tables']['tags']['Row']
 
 interface TaskEditModalProps {
   task: Task
@@ -24,9 +27,19 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
     task.due_date ? new Date(task.due_date).toISOString().split('T')[0] : ''
   )
   const [projectId, setProjectId] = useState<string>(task.project_id || '')
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([])
 
   const updateTask = useUpdateTask()
   const { data: projects } = useProjects()
+  const { data: taskTags } = useTaskTags(task.id)
+  const setTaskTags = useSetTaskTags()
+
+  // Load existing tags when component mounts
+  useEffect(() => {
+    if (taskTags) {
+      setSelectedTags(taskTags)
+    }
+  }, [taskTags])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,6 +61,12 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
         },
       })
 
+      // Update tags
+      await setTaskTags.mutateAsync({
+        taskId: task.id,
+        tagIds: selectedTags.map(tag => tag.id),
+      })
+
       onSuccess?.()
       onClose()
     } catch (error) {
@@ -56,9 +75,10 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+      <div className="w-full max-w-lg my-8 rounded-lg bg-white shadow-xl dark:bg-gray-800">
+        {/* Fixed Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Task</h2>
           <button
             onClick={onClose}
@@ -68,7 +88,9 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Scrollable Content */}
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-4 space-y-4">
           {/* Title */}
           <div>
             <label htmlFor="title" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -172,34 +194,44 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
             </div>
           </div>
 
+          {/* Tags */}
+          <TagSelector
+            selectedTags={selectedTags}
+            onTagsChange={setSelectedTags}
+          />
+
           {/* Subtasks */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
             <SubtaskList taskId={task.id} />
           </div>
+          </div>
 
-          {/* Error message */}
-          {updateTask.isError && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-              Failed to update task. Please try again.
+          {/* Fixed Footer */}
+          <div className="sticky bottom-0 z-10 border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
+            {/* Error message */}
+            {updateTask.isError && (
+              <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
+                Failed to update task. Please try again.
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!title.trim() || updateTask.isPending}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              >
+                {updateTask.isPending ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || updateTask.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-            >
-              {updateTask.isPending ? 'Saving...' : 'Save Changes'}
-            </button>
           </div>
         </form>
       </div>

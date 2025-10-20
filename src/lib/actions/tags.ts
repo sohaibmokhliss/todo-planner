@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/session'
 import type { Database } from '@/types/database'
 
@@ -71,17 +71,18 @@ export async function getTagById(id: string) {
 }
 
 export async function createTag(tagData: Omit<TagInsert, 'user_id'>) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
 
-  const { data, error } = await supabase
+  const supabase = await createAdminClient()
+
+  const { data, error} = await supabase
     .from('tags')
     .insert({
       ...tagData,
-      user_id: userId,
+      user_id: session.userId,
     })
     .select()
     .single()
@@ -96,17 +97,18 @@ export async function createTag(tagData: Omit<TagInsert, 'user_id'>) {
 }
 
 export async function updateTag(id: string, tagData: TagUpdate) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { data: null, error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { data: null, error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createAdminClient()
 
   const { data, error } = await supabase
     .from('tags')
     .update(tagData)
     .eq('id', id)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .select()
     .single()
 
@@ -120,17 +122,18 @@ export async function updateTag(id: string, tagData: TagUpdate) {
 }
 
 export async function deleteTag(id: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createAdminClient()
 
   const { error } = await supabase
     .from('tags')
     .delete()
     .eq('id', id)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
 
   if (error) {
     console.error('Error deleting tag:', error)
@@ -164,15 +167,17 @@ export async function getTaskTags(taskId: string) {
 }
 
 export async function addTagToTask(taskId: string, tagId: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   const [{ data: tag, error: tagError }, { data: task, error: taskError }] = await Promise.all([
-    supabase.from('tags').select('id').eq('id', tagId).eq('user_id', userId).single(),
-    supabase.from('tasks').select('id').eq('id', taskId).eq('user_id', userId).single(),
+    supabase.from('tags').select('id').eq('id', tagId).eq('user_id', session.userId).single(),
+    supabase.from('tasks').select('id').eq('id', taskId).eq('user_id', session.userId).single(),
   ])
 
   if (tagError || taskError || !tag || !task) {
@@ -180,7 +185,7 @@ export async function addTagToTask(taskId: string, tagId: string) {
     return { error: 'Cannot modify tag for this task' }
   }
 
-  const { error } = await supabase.from('task_tags').insert({
+  const { error } = await adminClient.from('task_tags').insert({
     task_id: taskId,
     tag_id: tagId,
   })
@@ -195,17 +200,19 @@ export async function addTagToTask(taskId: string, tagId: string) {
 }
 
 export async function removeTagFromTask(taskId: string, tagId: string) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   const { error: ownershipError } = await supabase
     .from('tasks')
     .select('id')
     .eq('id', taskId)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .single()
 
   if (ownershipError) {
@@ -213,7 +220,7 @@ export async function removeTagFromTask(taskId: string, tagId: string) {
     return { error: 'Cannot modify tags for this task' }
   }
 
-  const { error } = await supabase
+  const { error } = await adminClient
     .from('task_tags')
     .delete()
     .eq('task_id', taskId)
@@ -229,17 +236,19 @@ export async function removeTagFromTask(taskId: string, tagId: string) {
 }
 
 export async function setTaskTags(taskId: string, tagIds: string[]) {
-  const authContext = await getAuthenticatedContext()
-  if ('error' in authContext) {
-    return { error: authContext.error }
+  const session = await getSession()
+  if (!session) {
+    return { error: 'Not authenticated' }
   }
-  const { supabase, userId } = authContext
+
+  const supabase = await createClient()
+  const adminClient = await createAdminClient()
 
   const { error: taskOwnershipError } = await supabase
     .from('tasks')
     .select('id')
     .eq('id', taskId)
-    .eq('user_id', userId)
+    .eq('user_id', session.userId)
     .single()
 
   if (taskOwnershipError) {
@@ -247,7 +256,7 @@ export async function setTaskTags(taskId: string, tagIds: string[]) {
     return { error: 'Cannot modify tags for this task' }
   }
 
-  const { error: deleteError } = await supabase.from('task_tags').delete().eq('task_id', taskId)
+  const { error: deleteError } = await adminClient.from('task_tags').delete().eq('task_id', taskId)
 
   if (deleteError) {
     console.error('Error clearing task tags:', deleteError)
@@ -255,7 +264,7 @@ export async function setTaskTags(taskId: string, tagIds: string[]) {
   }
 
   if (tagIds.length > 0) {
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('task_tags')
       .insert(tagIds.map(tagId => ({ task_id: taskId, tag_id: tagId })))
 

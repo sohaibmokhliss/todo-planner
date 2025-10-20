@@ -78,18 +78,41 @@ export function SubtaskList({ taskId }: SubtaskListProps) {
     )
   }
 
+  const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           Subtasks
           {totalCount > 0 && (
-            <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+            <span className={`ml-2 text-xs font-medium ${
+              completedCount === totalCount
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-gray-500 dark:text-gray-400'
+            }`}>
+              {completedCount === totalCount && '✓ '}
               {completedCount}/{totalCount} completed
             </span>
           )}
         </h4>
       </div>
+
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="space-y-1">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div
+              className={`h-full transition-all duration-500 ease-out ${
+                completedCount === totalCount
+                  ? 'bg-gradient-to-r from-green-500 to-green-600'
+                  : 'bg-gradient-to-r from-indigo-500 to-indigo-600'
+              }`}
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Subtask List */}
       {subtasks.length > 0 && (
