@@ -49,7 +49,11 @@ export async function verifyAccessToken(
 ): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload as JWTPayload
+    // Validate payload has required fields
+    if (payload && typeof payload.userId === 'string' && typeof payload.username === 'string') {
+      return payload as unknown as JWTPayload
+    }
+    return null
   } catch (error) {
     // Token is invalid or expired
     return null

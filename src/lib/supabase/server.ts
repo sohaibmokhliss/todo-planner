@@ -36,13 +36,10 @@ export async function createClient() {
   const session = await getSession()
   if (session?.userId) {
     // Set the user_id in the database session for RLS to use
-    // Note: We catch and ignore errors here because set_user_context might fail
-    // in some connection pooling scenarios. The RLS policies should still work
-    // because we explicitly set user_id in queries.
     try {
       await client.rpc('set_user_context', { user_id: session.userId })
     } catch (error) {
-      // Log but don't throw - we'll rely on explicit user_id in queries
+      // Silently fail - RLS policies will still work with explicit user_id in queries
       console.error('Failed to set user context:', error)
     }
   }

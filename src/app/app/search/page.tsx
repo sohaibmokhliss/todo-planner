@@ -7,6 +7,7 @@ import { useProjects } from '@/hooks/useProjects'
 import { useTags } from '@/hooks/useTags'
 import { TaskList } from '@/components/tasks/TaskList'
 import { SearchBar } from '@/components/search/SearchBar'
+import { SavedSearches } from '@/components/search/SavedSearches'
 import Link from 'next/link'
 import { Search as SearchIcon, Filter, X, ChevronLeft } from 'lucide-react'
 import type { SearchFilters } from '@/lib/actions/tasks'
@@ -39,6 +40,11 @@ export default function SearchPage() {
       ...prev,
       [key]: value || undefined,
     }))
+  }
+
+  const handleLoadSavedSearch = (savedFilters: SearchFilters) => {
+    setFilters(savedFilters)
+    setShowFilters(false)
   }
 
   const clearFilters = () => {
@@ -114,7 +120,39 @@ export default function SearchPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Sort By */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Sort By
+                </label>
+                <select
+                  value={filters.sortBy || 'created_at'}
+                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="created_at">Created Date</option>
+                  <option value="due_date">Due Date</option>
+                  <option value="title">Title</option>
+                  <option value="priority">Priority</option>
+                </select>
+              </div>
+
+              {/* Sort Order */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
+                  Order
+                </label>
+                <select
+                  value={filters.sortOrder || 'desc'}
+                  onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="desc">Newest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+              </div>
+
               {/* Project Filter */}
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
@@ -169,7 +207,7 @@ export default function SearchPage() {
               </div>
 
               {/* Tags Filter */}
-              <div>
+              <div className="md:col-span-2">
                 <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">
                   Tags
                 </label>
@@ -189,9 +227,24 @@ export default function SearchPage() {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Hold Cmd/Ctrl to select multiple
-                </p>
+                <div className="mt-2 flex items-center gap-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Hold Cmd/Ctrl to select multiple
+                  </p>
+                  {filters.tagIds && filters.tagIds.length > 1 && (
+                    <label className="flex items-center gap-2 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={filters.matchAllTags || false}
+                        onChange={(e) => handleFilterChange('matchAllTags', e.target.checked)}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600"
+                      />
+                      <span className="text-gray-700 dark:text-gray-300">
+                        Match ALL tags (AND logic)
+                      </span>
+                    </label>
+                  )}
+                </div>
               </div>
 
               {/* Date From */}
@@ -251,7 +304,7 @@ export default function SearchPage() {
                 )}
                 {filters.tagIds && filters.tagIds.length > 0 && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-                    Tags: {filters.tagIds.length}
+                    Tags: {filters.tagIds.length} {filters.matchAllTags ? '(AND)' : '(OR)'}
                     <button onClick={() => handleFilterChange('tagIds', [])}>
                       <X size={12} />
                     </button>
@@ -265,6 +318,11 @@ export default function SearchPage() {
 
       {/* Results */}
       <div className="flex-1 overflow-y-auto p-6">
+        {/* Saved Searches */}
+        <div className="mb-6">
+          <SavedSearches onLoad={handleLoadSavedSearch} currentFilters={filters} />
+        </div>
+
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-gray-500 dark:text-gray-400">Searching...</div>
@@ -273,8 +331,13 @@ export default function SearchPage() {
           <div>
             <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               Found {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+              {filters.query && (
+                <span className="ml-1">
+                  matching "<strong>{filters.query}</strong>"
+                </span>
+              )}
             </div>
-            <TaskList tasks={tasks} />
+            <TaskList tasks={tasks} searchQuery={filters.query} />
           </div>
         ) : hasQuery ? (
           <div className="flex flex-col items-center justify-center py-12">

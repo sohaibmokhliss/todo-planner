@@ -107,9 +107,9 @@ export default function UpcomingPage() {
                   return (
                     <div key={dateKey} className="space-y-3">
                       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {dayLabel} ({tasks.length})
+                        {dayLabel} ({tasks?.length || 0})
                       </h3>
-                      <TaskList tasks={tasks} emptyMessage="" />
+                      <TaskList tasks={tasks || []} emptyMessage="" />
                     </div>
                   )
                 })}

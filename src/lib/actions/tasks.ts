@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server'
 import { getSession } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/types/database'
+import type { TaskWithRelations, TaskDependencyWithDetails } from '@/types/tasks'
 
 type TaskInsert = Database['public']['Tables']['tasks']['Insert']
 type TaskUpdate = Database['public']['Tables']['tasks']['Update']
@@ -26,7 +27,67 @@ async function getAuthenticatedContext(): Promise<AuthenticatedContext> {
   return { supabase, userId: session.userId }
 }
 
-export async function getTasks() {
+async function enrichTasksWithRelations(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  tasks: Database['public']['Tables']['tasks']['Row'][] | null
+): Promise<{ data: TaskWithRelations[]; error: string | null }> {
+  if (!tasks || tasks.length === 0) {
+    return { data: [], error: null }
+  }
+
+  const taskIds = tasks.map(task => task.id)
+
+  const [{ data: recurrences, error: recurrenceError }, { data: dependencies, error: dependenciesError }] =
+    await Promise.all([
+      supabase
+        .from('recurrence')
+        .select('*')
+        .in('task_id', taskIds),
+      supabase
+        .from('task_dependencies')
+        .select(`
+          *,
+          depends_on:tasks!task_dependencies_depends_on_task_id_fkey (
+            id,
+            title,
+            status,
+            priority,
+            due_date
+          )
+        `)
+        .in('task_id', taskIds),
+    ])
+
+  if (recurrenceError) {
+    return { data: [], error: recurrenceError.message }
+  }
+
+  if (dependenciesError) {
+    return { data: [], error: dependenciesError.message }
+  }
+
+  const recurrenceByTask = new Map<string, Database['public']['Tables']['recurrence']['Row']>()
+  recurrences?.forEach(recurrence => {
+    recurrenceByTask.set(recurrence.task_id, recurrence)
+  })
+
+  const dependenciesByTask = new Map<string, TaskDependencyWithDetails[]>()
+  ;(dependencies as TaskDependencyWithDetails[] | null)?.forEach(dependency => {
+    const existing = dependenciesByTask.get(dependency.task_id) || []
+    existing.push(dependency)
+    dependenciesByTask.set(dependency.task_id, existing)
+  })
+
+  const enrichedTasks: TaskWithRelations[] = tasks.map(task => ({
+    ...task,
+    recurrence: recurrenceByTask.get(task.id) ?? null,
+    dependencies: dependenciesByTask.get(task.id) ?? [],
+  }))
+
+  return { data: enrichedTasks, error: null }
+}
+
+export async function getTasks(): Promise<{ data: TaskWithRelations[] | null; error: string | null }> {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {
     return { data: null, error: authContext.error }
@@ -44,7 +105,13 @@ export async function getTasks() {
     return { data: null, error: error.message }
   }
 
-  return { data, error: null }
+  const { data: enrichedTasks, error: enrichmentError } = await enrichTasksWithRelations(supabase, data)
+
+  if (enrichmentError) {
+    return { data: null, error: enrichmentError }
+  }
+
+  return { data: enrichedTasks, error: null }
 }
 
 export async function getTaskById(id: string) {
@@ -173,7 +240,7 @@ export async function toggleTaskCompletion(id: string, currentStatus: 'todo' | '
   return { data, error: null }
 }
 
-export async function getIncompleteTasks() {
+export async function getIncompleteTasks(): Promise<{ data: TaskWithRelations[] | null; error: string | null }> {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {
     return { data: null, error: authContext.error }
@@ -192,10 +259,16 @@ export async function getIncompleteTasks() {
     return { data: null, error: error.message }
   }
 
-  return { data, error: null }
+  const { data: enrichedTasks, error: enrichmentError } = await enrichTasksWithRelations(supabase, data)
+
+  if (enrichmentError) {
+    return { data: null, error: enrichmentError }
+  }
+
+  return { data: enrichedTasks, error: null }
 }
 
-export async function getCompletedTasks() {
+export async function getCompletedTasks(): Promise<{ data: TaskWithRelations[] | null; error: string | null }> {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {
     return { data: null, error: authContext.error }
@@ -213,10 +286,19 @@ export async function getCompletedTasks() {
     return { data: null, error: error.message }
   }
 
-  return { data, error: null }
+  const { data: enrichedTasks, error: enrichmentError } = await enrichTasksWithRelations(supabase, data)
+
+  if (enrichmentError) {
+    return { data: null, error: enrichmentError }
+  }
+
+  return { data: enrichedTasks, error: null }
 }
 
-export async function getTasksByTags(tagIds: string[], matchAll: boolean = false) {
+export async function getTasksByTags(
+  tagIds: string[],
+  matchAll: boolean = false
+): Promise<{ data: TaskWithRelations[] | null; error: string | null }> {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {
     return { data: null, error: authContext.error }
@@ -276,20 +358,31 @@ export async function getTasksByTags(tagIds: string[], matchAll: boolean = false
     return { data: null, error: error.message }
   }
 
-  return { data, error: null }
+  const { data: enrichedTasks, error: enrichmentError } = await enrichTasksWithRelations(supabase, data)
+
+  if (enrichmentError) {
+    return { data: null, error: enrichmentError }
+  }
+
+  return { data: enrichedTasks, error: null }
 }
 
 export interface SearchFilters {
   query?: string
   projectId?: string
   tagIds?: string[]
+  matchAllTags?: boolean // AND logic if true, OR logic if false (default)
   status?: 'todo' | 'in_progress' | 'done'
   priority?: 'low' | 'medium' | 'high'
   dateFrom?: string
   dateTo?: string
+  sortBy?: 'created_at' | 'due_date' | 'title' | 'priority'
+  sortOrder?: 'asc' | 'desc'
 }
 
-export async function searchTasks(filters: SearchFilters) {
+export async function searchTasks(
+  filters: SearchFilters
+): Promise<{ data: TaskWithRelations[] | null; error: string | null }> {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {
     return { data: null, error: authContext.error }
@@ -331,8 +424,10 @@ export async function searchTasks(filters: SearchFilters) {
     query = query.lte('due_date', filters.dateTo)
   }
 
-  // Order results
-  query = query.order('created_at', { ascending: false })
+  // Apply sorting
+  const sortBy = filters.sortBy || 'created_at'
+  const sortOrder = filters.sortOrder || 'desc'
+  query = query.order(sortBy, { ascending: sortOrder === 'asc' })
 
   const { data: tasks, error } = await query
 
@@ -340,8 +435,11 @@ export async function searchTasks(filters: SearchFilters) {
     return { data: null, error: error.message }
   }
 
+  const baseTasks = tasks ?? []
+  let filteredTasks = baseTasks
+
   // If tag filters are provided, filter tasks by tags
-  if (filters.tagIds && filters.tagIds.length > 0 && tasks) {
+  if (filters.tagIds && filters.tagIds.length > 0 && baseTasks.length > 0) {
     const { data: taskTags, error: taskTagsError } = await supabase
       .from('task_tags')
       .select('task_id, tag_id')
@@ -357,10 +455,21 @@ export async function searchTasks(filters: SearchFilters) {
       taskIdCounts.set(task_id, (taskIdCounts.get(task_id) || 0) + 1)
     })
 
-    // Filter tasks that have at least one of the specified tags
-    const filteredTasks = tasks.filter(task => taskIdCounts.has(task.id))
-    return { data: filteredTasks, error: null }
+    // Filter tasks based on matchAllTags setting
+    if (filters.matchAllTags) {
+      // AND logic: tasks must have ALL specified tags
+      filteredTasks = baseTasks.filter(task => taskIdCounts.get(task.id) === filters.tagIds!.length)
+    } else {
+      // OR logic: tasks must have at least ONE of the specified tags
+      filteredTasks = baseTasks.filter(task => taskIdCounts.has(task.id))
+    }
   }
 
-  return { data: tasks, error: null }
+  const { data: enrichedTasks, error: enrichmentError } = await enrichTasksWithRelations(supabase, filteredTasks)
+
+  if (enrichmentError) {
+    return { data: null, error: enrichmentError }
+  }
+
+  return { data: enrichedTasks, error: null }
 }

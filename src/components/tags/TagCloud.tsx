@@ -1,34 +1,22 @@
 'use client'
 
-import { useTags } from '@/hooks/useTags'
+import { useTagsWithStats } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
 import { Tag as TagIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
 export function TagCloud() {
-  const { data: tags, isLoading: tagsLoading } = useTags()
-  const { data: tasks, isLoading: tasksLoading } = useTasks()
+  const { data: tagStats, isLoading: tagsLoading } = useTagsWithStats()
+  const { data: tasks } = useTasks()
 
-  // Calculate usage statistics for each tag
-  const tagStats = useMemo(() => {
-    if (!tags || !tasks) return []
+  // Sort tags by task count
+  const sortedTagStats = useMemo(() => {
+    if (!tagStats) return []
+    return [...tagStats].sort((a, b) => b.taskCount - a.taskCount)
+  }, [tagStats])
 
-    return tags.map(tag => {
-      const taskCount = tasks.filter(task => {
-        // We need to check if this task has this tag
-        // Since we don't have task_tags data loaded here, we'll just show the tag
-        return true
-      }).length
-
-      return {
-        ...tag,
-        taskCount,
-      }
-    }).sort((a, b) => b.taskCount - a.taskCount)
-  }, [tags, tasks])
-
-  if (tagsLoading || tasksLoading) {
+  if (tagsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-gray-500 dark:text-gray-400">Loading tags...</div>
@@ -36,7 +24,7 @@ export function TagCloud() {
     )
   }
 
-  if (!tags || tags.length === 0) {
+  if (!sortedTagStats || sortedTagStats.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <TagIcon size={48} className="mb-4 text-gray-400" />
@@ -49,8 +37,8 @@ export function TagCloud() {
   }
 
   // Calculate min and max counts for sizing
-  const maxCount = Math.max(...tagStats.map(t => t.taskCount), 1)
-  const minCount = Math.min(...tagStats.map(t => t.taskCount), 0)
+  const maxCount = Math.max(...sortedTagStats.map(t => t.taskCount), 1)
+  const minCount = Math.min(...sortedTagStats.map(t => t.taskCount), 0)
   const range = maxCount - minCount || 1
 
   const getTagSize = (count: number) => {
@@ -61,10 +49,13 @@ export function TagCloud() {
     return minSize + (maxSize - minSize) * ratio
   }
 
+  // Total number of tasks for percentage calculation
+  const totalTasks = tasks?.length || 0
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
-        {tagStats.map(tag => {
+        {sortedTagStats.map(tag => {
           const tagSlug = tag.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
           const fontSize = getTagSize(tag.taskCount)
 
@@ -116,9 +107,9 @@ export function TagCloud() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-            {tagStats.map(tag => {
+            {sortedTagStats.map(tag => {
               const tagSlug = tag.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-              const usagePercent = tasks && tasks.length > 0 ? (tag.taskCount / tasks.length) * 100 : 0
+              const usagePercent = totalTasks > 0 ? (tag.taskCount / totalTasks) * 100 : 0
 
               return (
                 <tr key={tag.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">

@@ -7,6 +7,10 @@ import { useTaskTags, useSetTaskTags } from '@/hooks/useTags'
 import { X } from 'lucide-react'
 import { SubtaskList } from './SubtaskList'
 import { TagSelector } from '@/components/tags/TagSelector'
+import { ReminderManager } from '@/components/reminders/ReminderManager'
+import { TaskNotes } from './TaskNotes'
+import { RecurrenceSettings } from './RecurrenceSettings'
+import { DependencySelector } from './DependencySelector'
 import type { Database } from '@/types/database'
 
 type Task = Database['public']['Tables']['tasks']['Row']
@@ -21,6 +25,7 @@ interface TaskEditModalProps {
 export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
+  const [notes, setNotes] = useState(task.notes_html || '')
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task.priority)
   const [status, setStatus] = useState<'todo' | 'in_progress' | 'done'>(task.status)
   const [dueDate, setDueDate] = useState(
@@ -53,6 +58,7 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
         data: {
           title: title.trim(),
           description: description.trim() || null,
+          notes_html: notes.trim() || null,
           priority,
           status,
           due_date: dueDate || null,
@@ -199,6 +205,21 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
           />
+
+          {/* Notes */}
+          <TaskNotes
+            value={notes}
+            onChange={setNotes}
+          />
+
+          {/* Dependencies */}
+          <DependencySelector taskId={task.id} />
+
+          {/* Recurrence */}
+          <RecurrenceSettings taskId={task.id} />
+
+          {/* Reminders */}
+          <ReminderManager taskId={task.id} taskDueDate={task.due_date} />
 
           {/* Subtasks */}
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">

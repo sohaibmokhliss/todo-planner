@@ -316,12 +316,34 @@ export async function updateProfile(formData: FormData) {
 
   const fullName = (formData.get('full_name') as string)?.trim() || null
   const avatarUrl = (formData.get('avatar_url') as string)?.trim() || null
+  const email = (formData.get('email') as string)?.trim() || null
+
+  // Validate email if provided
+  const emailValidation = validateEmail(email)
+  if (!emailValidation.isValid) {
+    return { error: emailValidation.error }
+  }
+
+  // Check if email already exists (if provided and different from current)
+  if (email) {
+    const { data: existingEmail } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .neq('id', session.userId)
+      .single()
+
+    if (existingEmail) {
+      return { error: 'Email already in use by another account' }
+    }
+  }
 
   const { error } = await supabase
     .from('users')
     .update({
       full_name: fullName,
       avatar_url: avatarUrl,
+      email,
     })
     .eq('id', session.userId)
 

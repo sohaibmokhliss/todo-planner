@@ -14,12 +14,13 @@ import {
   type SearchFilters,
 } from '@/lib/actions/tasks'
 import type { Database } from '@/types/database'
+import type { TaskWithRelations } from '@/types/tasks'
 
 type TaskInsert = Omit<Database['public']['Tables']['tasks']['Insert'], 'user_id'>
 type TaskUpdate = Database['public']['Tables']['tasks']['Update']
 
 export function useTasks() {
-  return useQuery({
+  return useQuery<TaskWithRelations[] | null>({
     queryKey: ['tasks'],
     queryFn: async () => {
       const result = await getTasks()
@@ -32,7 +33,7 @@ export function useTasks() {
 }
 
 export function useIncompleteTasks() {
-  return useQuery({
+  return useQuery<TaskWithRelations[] | null>({
     queryKey: ['tasks', 'incomplete'],
     queryFn: async () => {
       const result = await getIncompleteTasks()
@@ -45,7 +46,7 @@ export function useIncompleteTasks() {
 }
 
 export function useCompletedTasks() {
-  return useQuery({
+  return useQuery<TaskWithRelations[] | null>({
     queryKey: ['tasks', 'completed'],
     queryFn: async () => {
       const result = await getCompletedTasks()
@@ -126,7 +127,7 @@ export function useToggleTaskCompletion() {
 }
 
 export function useTasksByTags(tagIds: string[], matchAll: boolean = false) {
-  return useQuery({
+  return useQuery<TaskWithRelations[] | null>({
     queryKey: ['tasks', 'by-tags', tagIds.sort(), matchAll],
     queryFn: async () => {
       const result = await getTasksByTags(tagIds, matchAll)
@@ -140,7 +141,7 @@ export function useTasksByTags(tagIds: string[], matchAll: boolean = false) {
 }
 
 export function useSearchTasks(filters: SearchFilters) {
-  return useQuery({
+  return useQuery<TaskWithRelations[] | null>({
     queryKey: ['tasks', 'search', filters],
     queryFn: async () => {
       const result = await searchTasks(filters)

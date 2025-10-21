@@ -10,11 +10,13 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [devToken, setDevToken] = useState<string | null>(null)
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
     setError(null)
     setSuccess(false)
 
+    const formData = new FormData(e.currentTarget)
     const result = await requestPasswordReset(formData)
 
     if (result?.error) {
@@ -104,7 +106,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="mt-8 rounded-lg bg-white p-8 shadow dark:bg-gray-800">
-          <form action={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="email"

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getTags,
+  getTagsWithStats,
   createTag,
   updateTag,
   deleteTag,
@@ -21,6 +22,19 @@ export function useTags() {
     queryKey: ['tags'],
     queryFn: async () => {
       const result = await getTags()
+      if (result.error) {
+        throw new Error(result.error)
+      }
+      return result.data
+    },
+  })
+}
+
+export function useTagsWithStats() {
+  return useQuery({
+    queryKey: ['tags', 'with-stats'],
+    queryFn: async () => {
+      const result = await getTagsWithStats()
       if (result.error) {
         throw new Error(result.error)
       }
@@ -107,6 +121,7 @@ export function useAddTagToTask() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
 }
@@ -125,6 +140,7 @@ export function useRemoveTagFromTask() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
 }
@@ -143,6 +159,7 @@ export function useSetTaskTags() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
 }

@@ -1,4 +1,3 @@
-Connecting to db 5432
 export type Json =
   | string
   | number
@@ -346,6 +345,45 @@ export type Database = {
           },
         ]
       }
+      task_dependencies: {
+        Row: {
+          created_at: string | null
+          depends_on_task_id: string
+          id: string
+          task_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          depends_on_task_id: string
+          id?: string
+          task_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          depends_on_task_id?: string
+          id?: string
+          task_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_tags: {
         Row: {
           created_at: string
@@ -386,6 +424,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          notes_html: string | null
           position: number
           priority: string
           project_id: string | null
@@ -401,6 +440,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          notes_html?: string | null
           position?: number
           priority?: string
           project_id?: string | null
@@ -416,6 +456,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          notes_html?: string | null
           position?: number
           priority?: string
           project_id?: string | null
@@ -483,18 +524,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      clean_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      current_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      set_user_context: {
-        Args: { user_id: string }
-        Returns: undefined
-      }
+      clean_expired_sessions: { Args: never; Returns: undefined }
+      current_user_id: { Args: never; Returns: string }
+      set_user_context: { Args: { user_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

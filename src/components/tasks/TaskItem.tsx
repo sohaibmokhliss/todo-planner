@@ -2,21 +2,37 @@
 
 import { useState, useEffect } from 'react'
 import { format, isPast, isToday } from 'date-fns'
-import { Trash2, Calendar, Flag, Edit2, Circle, CheckCircle2, Clock, ChevronRight, ChevronDown, Plus } from 'lucide-react'
+import {
+  Trash2,
+  Calendar,
+  Flag,
+  Edit2,
+  Circle,
+  CheckCircle2,
+  Clock,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  Repeat,
+  Link2,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useDeleteTask, useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useTaskTags } from '@/hooks/useTags'
 import { TaskEditModal } from './TaskEditModal'
 import { SubtaskItem } from './SubtaskItem'
+import { HighlightedText } from '../search/HighlightedText'
 import { getSubtasksByTaskId, createSubtask } from '@/lib/actions/subtasks'
+import { formatRecurrenceDescription } from '@/lib/utils/recurrence'
+import type { TaskWithRelations } from '@/types/tasks'
 import type { Database } from '@/types/database'
 
-type Task = Database['public']['Tables']['tasks']['Row']
 type Subtask = Database['public']['Tables']['subtasks']['Row']
 
 interface TaskItemProps {
-  task: Task
+  task: TaskWithRelations
+  searchQuery?: string
 }
 
 const priorityColors = {
@@ -31,7 +47,7 @@ const priorityLabels = {
   high: 'High',
 }
 
-export function TaskItem({ task }: TaskItemProps) {
+export function TaskItem({ task, searchQuery }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -50,6 +66,31 @@ export function TaskItem({ task }: TaskItemProps) {
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isCompleted
   const isDueToday = task.due_date && isToday(new Date(task.due_date))
   const project = projects?.find(p => p.id === task.project_id)
+  const recurrenceDescription = formatRecurrenceDescription(task.recurrence)
+  const dependencies = task.dependencies || []
+  const incompleteDependencies = dependencies.filter(dep => dep.depends_on?.status !== 'done')
+  const dependencyBadgeText = (() => {
+    if (dependencies.length === 0) {
+      return null
+    }
+
+    if (dependencies.length === 1) {
+      const title = dependencies[0].depends_on?.title || 'another task'
+      return incompleteDependencies.length > 0 ? `Blocked by ${title}` : `Depends on ${title}`
+    }
+
+    if (incompleteDependencies.length > 0) {
+      const count = incompleteDependencies.length
+      return `Blocked by ${count} task${count > 1 ? 's' : ''}`
+    }
+
+    const count = dependencies.length
+    return `Depends on ${count} tasks`
+  })()
+  const dependencyBadgeClasses =
+    incompleteDependencies.length > 0
+      ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+      : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
 
   useEffect(() => {
     // Load subtasks on mount to show count
@@ -221,11 +262,21 @@ export function TaskItem({ task }: TaskItemProps) {
             }`}
           >
             {isCompleted && <span className="mr-2 text-lg">✓</span>}
-            {task.title}
+            {searchQuery ? (
+              <HighlightedText text={task.title} query={searchQuery} />
+            ) : (
+              task.title
+            )}
           </h3>
 
           {task.description && (
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{task.description}</p>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+              {searchQuery ? (
+                <HighlightedText text={task.description} query={searchQuery} />
+              ) : (
+                task.description
+              )}
+            </p>
           )}
 
           {/* Meta information */}
@@ -279,6 +330,24 @@ export function TaskItem({ task }: TaskItemProps) {
                 {format(new Date(task.due_date), 'dd/MM/yyyy')}
                 {isOverdue && ' (Overdue)'}
                 {isDueToday && ' (Today)'}
+              </span>
+            )}
+
+            {/* Recurrence */}
+            {recurrenceDescription && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                <Repeat size={12} />
+                {recurrenceDescription}
+              </span>
+            )}
+
+            {/* Dependencies */}
+            {dependencyBadgeText && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${dependencyBadgeClasses}`}
+              >
+                <Link2 size={12} />
+                {dependencyBadgeText}
               </span>
             )}
 

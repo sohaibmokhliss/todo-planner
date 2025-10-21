@@ -221,6 +221,30 @@ export async function toggleSubtaskCompletion(id: string) {
     return { data: null, error: error.message }
   }
 
+  // Auto-complete parent task if all subtasks are now completed
+  if (data?.completed) {
+    // Get all subtasks for this task
+    const { data: allSubtasks } = await adminClient
+      .from('subtasks')
+      .select('completed')
+      .eq('task_id', subtask.task_id)
+
+    // Check if all subtasks are completed
+    const allCompleted = allSubtasks?.every(st => st.completed) ?? false
+
+    if (allCompleted && allSubtasks && allSubtasks.length > 0) {
+      // Auto-complete the parent task
+      await adminClient
+        .from('tasks')
+        .update({
+          status: 'done',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', subtask.task_id)
+        .eq('user_id', session.userId)
+    }
+  }
+
   revalidatePath('/app')
   return { data, error: null }
 }

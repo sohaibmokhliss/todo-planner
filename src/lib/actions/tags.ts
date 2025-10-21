@@ -48,6 +48,60 @@ export async function getTags() {
   return { data, error: null }
 }
 
+/**
+ * Get all tags with task count statistics
+ */
+export async function getTagsWithStats() {
+  const authContext = await getAuthenticatedContext()
+  if ('error' in authContext) {
+    return { data: null, error: authContext.error }
+  }
+  const { supabase, userId } = authContext
+
+  // Get all tags for the user with task counts
+  const { data: tags, error: tagsError } = await supabase
+    .from('tags')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true })
+
+  if (tagsError) {
+    console.error('Error fetching tags:', tagsError)
+    return { data: null, error: tagsError.message }
+  }
+
+  if (!tags || tags.length === 0) {
+    return { data: [], error: null }
+  }
+
+  // Get task counts for each tag
+  const tagIds = tags.map(tag => tag.id)
+  const { data: taskCounts, error: countsError } = await supabase
+    .from('task_tags')
+    .select('tag_id')
+    .in('tag_id', tagIds)
+
+  if (countsError) {
+    console.error('Error fetching task counts:', countsError)
+    return { data: null, error: countsError.message }
+  }
+
+  // Count tasks per tag
+  const countMap = new Map<string, number>()
+  taskCounts?.forEach(item => {
+    const count = countMap.get(item.tag_id) || 0
+    countMap.set(item.tag_id, count + 1)
+  })
+
+  // Combine tags with counts
+  const tagsWithStats = tags.map(tag => ({
+    ...tag,
+    taskCount: countMap.get(tag.id) || 0,
+  }))
+
+  return { data: tagsWithStats, error: null }
+}
+
 export async function getTagById(id: string) {
   const authContext = await getAuthenticatedContext()
   if ('error' in authContext) {

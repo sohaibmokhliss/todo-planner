@@ -11,9 +11,12 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
     setError(null)
+
+    const formData = new FormData(e.currentTarget)
     const result = await signIn(formData)
     console.log('Sign in result:', result)
     if (result?.error) {
@@ -48,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         <div className="mt-8 rounded-lg bg-white p-8 shadow dark:bg-gray-800">
-          <form action={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="username"

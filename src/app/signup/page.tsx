@@ -11,10 +11,12 @@ export default function SignupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
     setLoading(true)
     setError(null)
 
+    const formData = new FormData(e.currentTarget)
     // Validate password confirmation
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirm_password') as string
@@ -57,7 +59,7 @@ export default function SignupPage() {
         </div>
 
         <div className="mt-8 rounded-lg bg-white p-8 shadow dark:bg-gray-800">
-          <form action={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
                 htmlFor="username"
