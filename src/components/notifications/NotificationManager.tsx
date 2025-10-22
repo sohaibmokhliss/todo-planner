@@ -17,9 +17,9 @@ import { Bell, BellOff } from 'lucide-react'
 
 export function NotificationManager() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
-  const [isPolling, setIsPolling] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const intervalRef = useRef<NodeJS.Timeout>()
+  const isPollingRef = useRef(false)
   const processedReminders = useRef<Set<string>>(new Set())
 
   // Check notification support and permission on mount
@@ -41,7 +41,7 @@ export function NotificationManager() {
   }
 
   // Poll for pending push notifications
-  const checkForPendingNotifications = async () => {
+  const checkForPendingNotifications = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -102,29 +102,29 @@ export function NotificationManager() {
     } catch (error) {
       console.error('Error checking for notifications:', error)
     }
-  }
+  }, [])
 
   // Start polling for notifications
   const startPolling = useCallback(() => {
-    if (isPolling) return
+    if (isPollingRef.current) {
+      return
+    }
 
-    setIsPolling(true)
-
+    isPollingRef.current = true
     // Check immediately
     checkForPendingNotifications()
 
     // Then check every minute
-    intervalRef.current = setInterval(() => {
-      checkForPendingNotifications()
-    }, 60 * 1000) // Every 60 seconds
-  }, [isPolling])
+    intervalRef.current = setInterval(checkForPendingNotifications, 60 * 1000) // Every 60 seconds
+  }, [checkForPendingNotifications])
 
   // Stop polling
   const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
+      intervalRef.current = undefined
     }
-    setIsPolling(false)
+    isPollingRef.current = false
   }, [])
 
   // Start/stop polling based on permission
