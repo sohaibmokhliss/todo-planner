@@ -69,7 +69,7 @@ export function DependencySelector({ taskId }: DependencySelectorProps) {
       {dependencies && dependencies.length > 0 && (
         <div className="space-y-2">
           {dependencies.map((dep) => {
-            const task = dep.tasks as any
+            const task = dep.tasks as unknown as { id: string; title: string; status: string; priority: string; due_date: string | null } | null
             if (!task) return null
 
             return (

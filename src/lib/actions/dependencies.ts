@@ -217,7 +217,7 @@ export async function removeTaskDependency(dependencyId: string) {
     .eq('id', dependencyId)
     .single()
 
-  if (!dependency || (dependency.tasks as any)?.user_id !== userId) {
+  if (!dependency || (dependency.tasks as unknown as { user_id: string } | null)?.user_id !== userId) {
     return { error: 'Dependency not found or access denied' }
   }
 
@@ -272,7 +272,7 @@ export async function canCompleteTask(taskId: string) {
   }
 
   // Check if all dependencies are done
-  const allDone = dependencies.every(dep => (dep.tasks as any)?.status === 'done')
+  const allDone = dependencies.every(dep => (dep.tasks as unknown as { status: string } | null)?.status === 'done')
 
-  return { data: allDone, error: null, blockedBy: dependencies.filter(dep => (dep.tasks as any)?.status !== 'done') }
+  return { data: allDone, error: null, blockedBy: dependencies.filter(dep => (dep.tasks as unknown as { status: string } | null)?.status !== 'done') }
 }

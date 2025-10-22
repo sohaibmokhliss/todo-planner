@@ -3,21 +3,20 @@
 import Link from 'next/link'
 import { SearchBar } from '@/components/search/SearchBar'
 import { signOut } from '@/lib/actions/auth'
-import type { Database } from '@/types/database'
 
-type User = Database['public']['Tables']['users']['Row']
+interface User {
+  id: string
+  username: string
+  email: string | null
+  full_name: string | null
+  avatar_url: string | null
+}
 
 interface AppHeaderProps {
   user: User
 }
 
 export function AppHeader({ user }: AppHeaderProps) {
-  const displayName = user.full_name || user.username
-
-  const handleSignOut = async () => {
-    await signOut()
-  }
-
   return (
     <header className="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center justify-between gap-4">

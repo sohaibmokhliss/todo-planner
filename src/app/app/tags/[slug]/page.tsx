@@ -52,7 +52,7 @@ export default function TagFilterPage({ params }: PageProps) {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tag not found</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            The tag you're looking for doesn't exist.
+            The tag you&apos;re looking for doesn&apos;t exist.
           </p>
         </div>
         <Link
@@ -225,7 +225,7 @@ export default function TagFilterPage({ params }: PageProps) {
               No tasks with {activeTagCount > 1 ? 'these tags' : 'this tag'}
             </h3>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Create a task and assign it the "{primaryTag.name}" tag to see it here.
+              Create a task and assign it the &ldquo;{primaryTag.name}&rdquo; tag to see it here.
             </p>
             <button
               onClick={() => setShowTaskForm(true)}

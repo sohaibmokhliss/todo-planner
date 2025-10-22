@@ -2,10 +2,15 @@
 
 import { useState } from 'react'
 import { updateProfile } from '@/lib/actions/auth'
-import type { Database } from '@/types/database'
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react'
 
-type User = Database['public']['Tables']['users']['Row']
+interface User {
+  id: string
+  username: string
+  email: string | null
+  full_name: string | null
+  avatar_url: string | null
+}
 
 interface ProfileFormProps {
   user: User

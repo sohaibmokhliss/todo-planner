@@ -35,7 +35,7 @@ export default function SearchPage() {
     setFilters(prev => ({ ...prev, query }))
   }
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
+  const handleFilterChange = (key: keyof SearchFilters, value: string | string[] | boolean | undefined) => {
     setFilters(prev => ({
       ...prev,
       [key]: value || undefined,
@@ -333,7 +333,7 @@ export default function SearchPage() {
               Found {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               {filters.query && (
                 <span className="ml-1">
-                  matching "<strong>{filters.query}</strong>"
+                  matching &ldquo;<strong>{filters.query}</strong>&rdquo;
                 </span>
               )}
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { showNotification, requestNotificationPermission, isNotificationSupported, generateTaskReminderNotification } from '@/lib/services/notifications'
 import { createClient } from '@/lib/supabase/client'
 import { Bell, BellOff } from 'lucide-react'
@@ -105,7 +105,7 @@ export function NotificationManager() {
   }
 
   // Start polling for notifications
-  const startPolling = () => {
+  const startPolling = useCallback(() => {
     if (isPolling) return
 
     setIsPolling(true)
@@ -117,15 +117,15 @@ export function NotificationManager() {
     intervalRef.current = setInterval(() => {
       checkForPendingNotifications()
     }, 60 * 1000) // Every 60 seconds
-  }
+  }, [isPolling])
 
   // Stop polling
-  const stopPolling = () => {
+  const stopPolling = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
     }
     setIsPolling(false)
-  }
+  }, [])
 
   // Start/stop polling based on permission
   useEffect(() => {
@@ -138,7 +138,7 @@ export function NotificationManager() {
     return () => {
       stopPolling()
     }
-  }, [permission])
+  }, [permission, startPolling, stopPolling])
 
   // Don't render until mounted to avoid hydration mismatch
   if (!isMounted) {

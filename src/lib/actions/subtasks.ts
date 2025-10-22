@@ -73,7 +73,8 @@ export async function getSubtasksByParentId(parentId: string) {
     .eq('id', parentId)
     .single()
 
-  if (!parentSubtask || parentSubtask.tasks.user_id !== userId) {
+  const tasks = parentSubtask?.tasks as unknown as { user_id: string } | undefined
+  if (!parentSubtask || !tasks || tasks.user_id !== userId) {
     return { data: null, error: 'Parent subtask not found or access denied' }
   }
 
@@ -169,7 +170,8 @@ export async function updateSubtask(id: string, subtaskData: SubtaskUpdate) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== session.userId) {
+  const tasks = subtask?.tasks as unknown as { user_id: string } | undefined
+  if (!subtask || !tasks || tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
@@ -205,7 +207,8 @@ export async function toggleSubtaskCompletion(id: string) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== session.userId) {
+  const tasks = subtask?.tasks as unknown as { user_id: string } | undefined
+  if (!subtask || !tasks || tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
@@ -265,7 +268,8 @@ export async function deleteSubtask(id: string) {
     .eq('id', id)
     .single()
 
-  if (!subtask || subtask.tasks.user_id !== session.userId) {
+  const tasks = subtask?.tasks as unknown as { user_id: string } | undefined
+  if (!subtask || !tasks || tasks.user_id !== session.userId) {
     return { data: null, error: 'Subtask not found or access denied' }
   }
 
@@ -313,7 +317,7 @@ export async function reorderSubtasks(
     await Promise.all(updates)
     revalidatePath('/app')
     return { error: null }
-  } catch (_error) {
+  } catch {
     return { error: 'Failed to reorder subtasks' }
   }
 }

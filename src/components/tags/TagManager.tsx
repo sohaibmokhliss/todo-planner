@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Edit2, Trash2, Tag as TagIcon, X } from 'lucide-react'
+import { Plus, Edit2, Trash2, Tag as TagIcon } from 'lucide-react'
 import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from '@/hooks/useTags'
 
 interface TagFormData {

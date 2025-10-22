@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Repeat, X, Calendar, Trash2 } from 'lucide-react'
+import { Repeat, Trash2 } from 'lucide-react'
 import { useRecurrence, useCreateRecurrence, useUpdateRecurrence, useDeleteRecurrence } from '@/hooks/useRecurrence'
 import { formatRecurrenceDescription } from '@/lib/utils/recurrence'
 
@@ -36,7 +36,7 @@ export function RecurrenceSettings({ taskId }: RecurrenceSettingsProps) {
   // Load existing recurrence settings
   useEffect(() => {
     if (existingRecurrence) {
-      setFrequency(existingRecurrence.frequency as any)
+      setFrequency(existingRecurrence.frequency as 'daily' | 'weekly' | 'monthly' | 'custom')
       setInterval(existingRecurrence.interval)
       setDaysOfWeek(existingRecurrence.days_of_week || [])
       setEndDate(
@@ -165,7 +165,7 @@ export function RecurrenceSettings({ taskId }: RecurrenceSettingsProps) {
             </label>
             <select
               value={frequency}
-              onChange={(e) => setFrequency(e.target.value as any)}
+              onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly' | 'custom')}
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="daily">Daily</option>

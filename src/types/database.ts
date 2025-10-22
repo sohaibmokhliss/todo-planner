@@ -71,6 +71,7 @@ export interface Database {
           project_id: string | null
           title: string
           description: string | null
+          notes_html: string | null
           priority: 'low' | 'medium' | 'high'
           status: 'todo' | 'in_progress' | 'done'
           due_date: string | null
@@ -86,6 +87,7 @@ export interface Database {
           project_id?: string | null
           title: string
           description?: string | null
+          notes_html?: string | null
           priority?: 'low' | 'medium' | 'high'
           status?: 'todo' | 'in_progress' | 'done'
           due_date?: string | null
@@ -101,6 +103,7 @@ export interface Database {
           project_id?: string | null
           title?: string
           description?: string | null
+          notes_html?: string | null
           priority?: 'low' | 'medium' | 'high'
           status?: 'todo' | 'in_progress' | 'done'
           due_date?: string | null
@@ -243,6 +246,29 @@ export interface Database {
           type?: 'email' | 'push'
           time?: string
           sent?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      task_dependencies: {
+        Row: {
+          id: string
+          task_id: string
+          depends_on_task_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          depends_on_task_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          depends_on_task_id?: string
           created_at?: string
           updated_at?: string
         }

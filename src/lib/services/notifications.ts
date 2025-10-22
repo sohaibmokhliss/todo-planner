@@ -83,7 +83,6 @@ export async function showNotification(payload: NotificationPayload): Promise<bo
         tag: payload.tag || 'task-reminder',
         data: payload.data,
         requireInteraction: false,
-        vibrate: [200, 100, 200],
       })
     } else {
       // Fallback to basic notification

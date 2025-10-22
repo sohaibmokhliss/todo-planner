@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Star, Trash2, X } from 'lucide-react'
+import { Star, Trash2, X } from 'lucide-react'
 import type { SearchFilters } from '@/lib/actions/tasks'
 
 export interface SavedSearch {

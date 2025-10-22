@@ -53,7 +53,7 @@ export async function verifyAccessToken(
       return payload as unknown as JWTPayload
     }
     return null
-  } catch (_error) {
+  } catch {
     // Token is invalid or expired
     return null
   }

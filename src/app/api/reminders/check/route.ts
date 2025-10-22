@@ -14,7 +14,7 @@ import { sendEmail, generateReminderEmail } from '@/lib/services/email'
  * - Or use external cron services like cron-job.org
  */
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Optional: Add authentication to prevent abuse
     // const authHeader = request.headers.get('authorization')
@@ -145,6 +145,6 @@ export async function GET(request: NextRequest) {
 }
 
 // Allow POST as well for manual triggering
-export async function POST(request: NextRequest) {
-  return GET(request)
+export async function POST(_request: NextRequest) {
+  return GET(_request)
 }

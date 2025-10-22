@@ -216,7 +216,7 @@ export async function getTaskTags(taskId: string) {
     return { data: null, error: error.message }
   }
 
-  const tags = data?.map(item => item.tags).filter(Boolean) as Tag[] | undefined
+  const tags = data?.map(item => item.tags).filter(Boolean) as unknown as Tag[] | undefined
   return { data: tags ?? [], error: null }
 }
 
