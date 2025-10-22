@@ -3,7 +3,7 @@
  */
 
 import { cookies } from 'next/headers'
-import { generateAccessToken, verifyAccessToken, type JWTPayload } from './jwt'
+import { generateAccessToken, verifyAccessToken } from './jwt'
 
 const SESSION_COOKIE_NAME = 'session'
 const MAX_AGE = 60 * 60 * 24 // 24 hours in seconds

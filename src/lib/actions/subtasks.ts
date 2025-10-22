@@ -313,7 +313,7 @@ export async function reorderSubtasks(
     await Promise.all(updates)
     revalidatePath('/app')
     return { error: null }
-  } catch (error) {
+  } catch (_error) {
     return { error: 'Failed to reorder subtasks' }
   }
 }

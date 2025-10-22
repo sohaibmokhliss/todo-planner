@@ -11,7 +11,6 @@ const JWT_SECRET = new TextEncoder().encode(
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRES_IN = '24h' // 24 hours
-const REFRESH_TOKEN_EXPIRES_IN = '7d' // 7 days
 
 export interface JWTPayload {
   userId: string
@@ -54,7 +53,7 @@ export async function verifyAccessToken(
       return payload as unknown as JWTPayload
     }
     return null
-  } catch (error) {
+  } catch (_error) {
     // Token is invalid or expired
     return null
   }
