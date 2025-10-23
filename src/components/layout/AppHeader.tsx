@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { Menu } from 'lucide-react'
 import { SearchBar } from '@/components/search/SearchBar'
 import { signOut } from '@/lib/actions/auth'
+import { useSidebar } from '@/hooks/useSidebar'
 
 interface User {
   id: string
@@ -17,9 +19,21 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ user }: AppHeaderProps) {
+  const toggleSidebar = useSidebar((state) => state.toggle)
+
   return (
     <header className="border-b border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-center justify-between gap-4">
+        {/* Hamburger Menu Button for Mobile */}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="md:hidden rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+          aria-label="Toggle sidebar"
+        >
+          <Menu size={24} />
+        </button>
+
         <Link
           href="/app"
           className="text-2xl font-bold text-gray-900 dark:text-white shrink-0 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
