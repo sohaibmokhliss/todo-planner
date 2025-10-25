@@ -52,7 +52,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
           name="full_name"
           defaultValue={user.full_name || ''}
           placeholder="Enter your full name"
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+          className="w-full rounded-lg border-2 border-indigo-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
         />
       </div>
 
@@ -68,28 +68,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
           name="email"
           defaultValue={user.email || ''}
           placeholder="your.email@example.com"
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
+          className="w-full rounded-lg border-2 border-indigo-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
         />
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Used for password recovery - keep it up to date
-        </p>
-      </div>
-
-      {/* Avatar URL */}
-      <div>
-        <label htmlFor="avatar_url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Avatar URL
-        </label>
-        <input
-          type="url"
-          id="avatar_url"
-          name="avatar_url"
-          defaultValue={user.avatar_url || ''}
-          placeholder="https://example.com/avatar.jpg"
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-500"
-        />
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Enter the URL of your profile picture
         </p>
       </div>
 
@@ -116,7 +98,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           {isSubmitting ? (
             <>
