@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Todo Planner',
   description: 'A modern to-do & personal planning web app',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({
