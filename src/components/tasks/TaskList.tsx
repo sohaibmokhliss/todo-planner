@@ -12,8 +12,8 @@ interface TaskListProps {
 export function TaskList({ tasks, emptyMessage = 'No tasks yet. Create your first task to get started!', searchQuery }: TaskListProps) {
   if (tasks.length === 0) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-12 text-center dark:border-gray-700 dark:bg-gray-800">
-        <p className="text-gray-500 dark:text-gray-400">{emptyMessage}</p>
+      <div className="rounded-xl border-2 border-dashed border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-100 p-12 text-center shadow-md dark:border-indigo-700 dark:from-gray-800 dark:to-indigo-900">
+        <p className="text-lg font-semibold text-indigo-700 dark:text-indigo-300">{emptyMessage}</p>
       </div>
     )
   }

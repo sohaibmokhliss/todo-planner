@@ -39,18 +39,18 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-100 to-blue-100 px-4 dark:from-gray-900 dark:via-indigo-950 dark:to-purple-950">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-4xl font-bold tracking-tight text-transparent dark:from-indigo-400 dark:to-purple-400">
             Welcome back
           </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
             Sign in to your account to continue
           </p>
         </div>
 
-        <div className="mt-8 rounded-lg bg-white p-8 shadow dark:bg-gray-800">
+        <div className="mt-8 rounded-2xl border-2 border-indigo-300 bg-white p-8 shadow-2xl dark:border-indigo-700 dark:bg-gray-800">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label
@@ -97,7 +97,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="flex w-full justify-center rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-sm font-bold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>

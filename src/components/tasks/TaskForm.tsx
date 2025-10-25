@@ -86,13 +86,13 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Create New Task</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg animate-in zoom-in-95 rounded-2xl border-2 border-indigo-300 bg-white p-6 shadow-2xl dark:border-indigo-700 dark:bg-gray-800">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent dark:from-indigo-400 dark:to-purple-400">Create New Task</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            className="rounded-lg p-2 text-gray-500 transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
           >
             <X size={20} />
           </button>
@@ -110,7 +110,7 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+              className="w-full rounded-lg border-2 border-indigo-200 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
               autoFocus
               required
             />
@@ -227,7 +227,7 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
             <button
               type="submit"
               disabled={!title.trim() || createTask.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {createTask.isPending ? 'Creating...' : 'Create Task'}
             </button>

@@ -91,7 +91,7 @@ export function Sidebar() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col border-r border-gray-200 bg-white p-4 transition-transform duration-200 ease-out dark:border-gray-700 dark:bg-gray-800 md:static md:z-auto md:translate-x-0 md:shadow-none ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 transform flex-col overflow-y-auto border-r-2 border-indigo-200 bg-white p-4 shadow-lg transition-transform duration-200 ease-out dark:border-gray-700 dark:bg-gray-800 md:static md:z-auto md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -119,10 +119,10 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={closeSidebar}
-                className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/50'
+                    : 'text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:scale-105 dark:text-gray-300 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -131,10 +131,10 @@ export function Sidebar() {
                 </div>
                 {item.count > 0 && (
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                       isActive
-                        ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                        ? 'bg-white/90 text-indigo-700 shadow-sm'
+                        : 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 dark:from-indigo-900/40 dark:to-purple-900/40 dark:text-indigo-300'
                     }`}
                   >
                     {item.count}
@@ -155,10 +155,10 @@ export function Sidebar() {
             <Link
               href="/app/tags"
               onClick={closeSidebar}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 pathname === '/app/tags'
-                  ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/50'
+                  : 'text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:scale-105 dark:text-gray-300 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30'
               }`}
             >
               <div className="flex items-center gap-2">
@@ -231,10 +231,10 @@ export function Sidebar() {
                       key={project.id}
                       href={`/app/projects/${project.id}`}
                       onClick={closeSidebar}
-                      className={`flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                         isActive
-                          ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                          : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-900/50'
+                          : 'text-gray-700 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:scale-105 dark:text-gray-300 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -243,10 +243,10 @@ export function Sidebar() {
                       </div>
                       {projectTaskCount > 0 && (
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                             isActive
-                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                              ? 'bg-white/90 text-indigo-700 shadow-sm'
+                              : 'bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 dark:from-indigo-900/40 dark:to-purple-900/40 dark:text-indigo-300'
                           }`}
                         >
                           {projectTaskCount}

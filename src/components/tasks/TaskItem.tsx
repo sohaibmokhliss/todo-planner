@@ -179,10 +179,10 @@ export function TaskItem({ task, searchQuery }: TaskItemProps) {
     <>
       <div className={`${isDeleting ? 'opacity-50' : ''}`}>
         <div
-          className={`group relative rounded-lg border bg-white p-4 transition-all hover:shadow-md dark:bg-gray-800 ${
+          className={`group relative rounded-xl border-2 bg-white p-4 shadow-md transition-all hover:scale-[1.01] hover:shadow-xl dark:bg-gray-800 ${
             isCompleted
-              ? 'border-green-300 bg-green-50/30 dark:border-green-800 dark:bg-green-900/10'
-              : 'border-gray-200 dark:border-gray-700'
+              ? 'border-green-400 bg-gradient-to-br from-green-50 to-emerald-100 dark:border-green-700 dark:from-green-900/40 dark:to-emerald-900/30'
+              : 'border-indigo-200 hover:border-indigo-300 dark:border-gray-700 dark:hover:border-gray-600'
           }`}
         >
           {/* Completion celebration indicator */}

@@ -46,16 +46,16 @@ export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="flex w-full items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-white px-4 py-3 text-left text-sm text-gray-500 transition-colors hover:border-indigo-400 hover:bg-gray-50 hover:text-indigo-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-indigo-500 dark:hover:bg-gray-700 dark:hover:text-indigo-400"
+        className="group flex w-full items-center gap-2 rounded-xl border-2 border-dashed border-indigo-300 bg-gradient-to-r from-indigo-50 to-purple-100 px-4 py-3 text-left text-sm font-semibold text-indigo-700 shadow-md transition-all hover:scale-[1.02] hover:border-indigo-400 hover:from-indigo-100 hover:to-purple-200 hover:shadow-lg dark:border-indigo-700 dark:from-gray-800 dark:to-indigo-900 dark:text-indigo-300 dark:hover:border-indigo-600"
       >
-        <Plus size={16} />
+        <Plus size={18} className="transition-transform group-hover:rotate-90" />
         Quick add task...
       </button>
     )
   }
 
   return (
-    <div className="rounded-lg border-2 border-indigo-500 bg-white p-3 shadow-sm dark:border-indigo-400 dark:bg-gray-800">
+    <div className="animate-in slide-in-from-top-2 rounded-xl border-2 border-indigo-500 bg-white p-3 shadow-lg dark:border-indigo-400 dark:bg-gray-800">
       <div className="flex items-center gap-2">
         <input
           type="text"

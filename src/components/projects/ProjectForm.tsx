@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useCreateProject, useUpdateProject } from '@/hooks/useProjects'
 import type { Database } from '@/types/database'
@@ -69,16 +70,16 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl dark:bg-gray-800">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+  const modalContent = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg animate-in zoom-in-95 rounded-2xl border-2 border-indigo-300 bg-white p-6 shadow-2xl dark:border-indigo-700 dark:bg-gray-800">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent dark:from-indigo-400 dark:to-purple-400">
             {isEdit ? 'Edit Project' : 'Create New Project'}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            className="rounded-lg p-2 text-gray-500 transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
           >
             <X size={20} />
           </button>
@@ -97,7 +98,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
                 id="emoji"
                 value={emoji}
                 onChange={(e) => setEmoji(e.target.value.slice(0, 2))}
-                className="w-16 rounded-lg border border-gray-300 bg-white px-3 py-2 text-center text-2xl focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
+                className="w-16 rounded-lg border-2 border-indigo-200 bg-white px-3 py-2 text-center text-2xl shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
                 maxLength={2}
               />
             </div>
@@ -113,7 +114,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Work, Personal, Fitness"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+                className="w-full rounded-lg border-2 border-indigo-200 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
                 autoFocus
                 required
               />
@@ -131,7 +132,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What is this project about?"
               rows={2}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
+              className="w-full rounded-lg border-2 border-indigo-200 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-500 shadow-sm transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-indigo-500 dark:focus:ring-indigo-900/30"
             />
           </div>
 
@@ -146,9 +147,9 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
                   key={c.value}
                   type="button"
                   onClick={() => setColor(c.value)}
-                  className={`h-10 rounded-lg border-2 transition-all ${
+                  className={`h-10 rounded-lg border-2 shadow-sm transition-all hover:scale-110 hover:shadow-md ${
                     color === c.value
-                      ? 'border-gray-900 ring-2 ring-gray-300 dark:border-white dark:ring-gray-600'
+                      ? 'scale-110 border-gray-900 ring-2 ring-gray-300 dark:border-white dark:ring-gray-600'
                       : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                   }`}
                   style={{ backgroundColor: c.value }}
@@ -177,7 +178,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
             <button
               type="submit"
               disabled={!name.trim() || createProject.isPending || updateProject.isPending}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+              className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
               {createProject.isPending || updateProject.isPending
                 ? isEdit
@@ -192,4 +193,6 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
       </div>
     </div>
   )
+
+  return typeof window !== 'undefined' ? createPortal(modalContent, document.body) : null
 }
