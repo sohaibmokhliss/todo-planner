@@ -5,6 +5,9 @@ import { getSession } from '@/lib/auth/session'
 /**
  * Create a Supabase client for server-side usage with custom authentication
  * This client automatically sets the user context for RLS policies
+ *
+ * NOTE: For create/update/delete operations with explicit user_id checks,
+ * prefer using createAdminClient() to avoid the RPC overhead.
  */
 export async function createClient() {
   const cookieStore = await cookies()
@@ -40,6 +43,7 @@ export async function createClient() {
   )
 
   // Set user context for RLS policies
+  // This is only needed for SELECT queries that rely on RLS policies
   const session = await getSession()
   if (session?.userId) {
     // Set the user_id in the database session for RLS to use

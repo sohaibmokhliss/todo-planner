@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { format, isPast, isToday } from 'date-fns'
 import {
   Trash2,
@@ -47,7 +47,8 @@ const priorityLabels = {
   high: 'High',
 }
 
-export function TaskItem({ task, searchQuery }: TaskItemProps) {
+// Memoize TaskItem to prevent unnecessary re-renders when parent updates
+export const TaskItem = memo(function TaskItem({ task, searchQuery }: TaskItemProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -93,7 +94,15 @@ export function TaskItem({ task, searchQuery }: TaskItemProps) {
       : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
 
   useEffect(() => {
-    // Load subtasks on mount to show count
+    // Use subtasks from task.subtasks if available (already loaded from enrichment)
+    if (task.subtasks && task.subtasks.length > 0) {
+      // Filter to show only top-level subtasks (those without a parent)
+      const topLevel = task.subtasks.filter(st => !st.parent_id)
+      setSubtasks(topLevel)
+      return
+    }
+
+    // Fallback: Load subtasks if not already loaded
     const loadSubtasks = async () => {
       const { data, error } = await getSubtasksByTaskId(task.id)
       if (data && !error) {
@@ -102,7 +111,7 @@ export function TaskItem({ task, searchQuery }: TaskItemProps) {
       }
     }
     loadSubtasks()
-  }, [task.id])
+  }, [task.id, task.subtasks])
 
   const handleStatusChange = async (newStatus: 'todo' | 'in_progress' | 'done') => {
     try {
@@ -526,4 +535,4 @@ export function TaskItem({ task, searchQuery }: TaskItemProps) {
       {isEditing && <TaskEditModal task={task} onClose={() => setIsEditing(false)} />}
     </>
   )
-}
+})

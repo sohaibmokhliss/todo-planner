@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Trash2, Plus, ChevronRight, ChevronDown } from 'lucide-react'
 import { toggleSubtaskCompletion, deleteSubtask, getSubtasksByParentId, createSubtask } from '@/lib/actions/subtasks'
 import type { Database } from '@/types/database'
@@ -13,7 +13,8 @@ interface SubtaskItemProps {
   depth?: number
 }
 
-export function SubtaskItem({ subtask, onUpdate, depth = 0 }: SubtaskItemProps) {
+// Memoize SubtaskItem to prevent unnecessary re-renders in nested structures
+export const SubtaskItem = memo(function SubtaskItem({ subtask, onUpdate, depth = 0 }: SubtaskItemProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [children, setChildren] = useState<Subtask[]>([])
@@ -264,4 +265,4 @@ export function SubtaskItem({ subtask, onUpdate, depth = 0 }: SubtaskItemProps) 
       )}
     </div>
   )
-}
+})

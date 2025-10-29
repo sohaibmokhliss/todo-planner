@@ -69,7 +69,39 @@ export function useCreateTask() {
       }
       return result.data
     },
-    onSuccess: () => {
+    // Optimistic update for task creation
+    onMutate: async (newTask) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] })
+
+      const previousTasks = queryClient.getQueryData(['tasks'])
+
+      // Optimistically add the task
+      queryClient.setQueryData(['tasks'], (old: any) => {
+        if (!old) return old
+
+        const optimisticTask: TaskWithRelations = {
+          id: `temp-${Date.now()}`,
+          ...newTask,
+          user_id: 'temp',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: old.length,
+          recurrence: null,
+          dependencies: [],
+          subtasks: [],
+        } as any
+
+        return [...old, optimisticTask]
+      })
+
+      return { previousTasks }
+    },
+    onError: (err, newTask, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })
@@ -120,7 +152,48 @@ export function useToggleTaskCompletion() {
       }
       return result.data
     },
-    onSuccess: () => {
+    // Optimistic toggle for instant feedback
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['tasks'] })
+
+      const previousTasks = queryClient.getQueryData(['tasks'])
+      const newStatus = status === 'done' ? 'todo' : 'done'
+      const completedAt = newStatus === 'done' ? new Date().toISOString() : null
+
+      // Optimistically update all task queries
+      queryClient.setQueryData(['tasks'], (old: any) => {
+        if (!old) return old
+        return old.map((task: any) =>
+          task.id === id ? { ...task, status: newStatus, completed_at: completedAt } : task
+        )
+      })
+
+      queryClient.setQueryData(['tasks', 'incomplete'], (old: any) => {
+        if (!old) return old
+        if (newStatus === 'done') {
+          return old.filter((task: any) => task.id !== id)
+        }
+        return old
+      })
+
+      queryClient.setQueryData(['tasks', 'completed'], (old: any) => {
+        if (!old) return old
+        if (newStatus === 'done') {
+          const task = previousTasks && (previousTasks as any[]).find((t: any) => t.id === id)
+          return task ? [...old, { ...task, status: 'done', completed_at: completedAt }] : old
+        } else {
+          return old.filter((task: any) => task.id !== id)
+        }
+      })
+
+      return { previousTasks }
+    },
+    onError: (err, { id, status }, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(['tasks'], context.previousTasks)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })

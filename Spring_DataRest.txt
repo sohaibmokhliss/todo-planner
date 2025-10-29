@@ -1,0 +1,430 @@
+WEB SERVICE
+
+II- Mise en œuvre des Web services avec Spring Data Rest
+
+Architecture des composants
+
+A.Ettaoufik
+
+140
+
+SPRING DATA REST
+❖ Pourquoi Spring Data Rest
+Une application Spring typique utilise une architecture à trois couches :
+
+Client
+
+Controller
+
+Service
+
+Dao
+(Repository)
+
+BD
+
+La création des API CRUD REST pour une entité passe par la création d’une classe de contrôleur et écrire manuellement des
+API REST (créer, mettre à jour, supprimer, obtenir, pagination, trier, etc.).
+
+Architecture des composants
+
+A.Ettaoufik
+
+141
+
+SPRING DATA REST
+❖ Le module Spring Data REST est la solution.
+Spring Data REST utilise des interfaces qui étendent JpaRepository et fournit des API
+CRUD REST pour les entités
+Client
+
+Client
+
+Architecture des composants
+
+Controller
+
+Dao
+
+Service
+
+Spring
+Data Rest
+
+BD
+
+(Repository)
+
+Dao
+(Repository)
+
+A.Ettaoufik
+
+BD
+
+142
+
+SPRING DATA REST
+Avantages
+❖ Minimiser le code de la couche de contrôleur standard
+→ accélérer le temps global de développement des applications
+
+❖ Prend en charge une variété de fournisseurs de persistance via les modules Spring Data
+respectifs – Spring Data JPA, Spring Data MongoDB, Spring Data Neo4j, Spring Data
+Cassandra et Spring Data GemFire.
+
+Architecture des composants
+
+A.Ettaoufik
+
+144
+
+SPRING DATA REST
+Fonctionnement
+Au lancement d’une application Spring Data Repository, elle détecte d'abord tous les
+référentiels qui ont une annotation @RepositoryRestResource.
+Par défaut Spring Data Rest crée une API REST pour chaque entité
+@RepositoryRestResource
+public interface EtudiantRepository extends JpaRepository<Etudiant, Long> {
+}
+Entité
+Architecture des composants
+
+Identifiant
+
+A.Ettaoufik
+
+145
+
+SPRING DATA REST
+Fonctionnement
+@RepositoryRestResource
+public interface EtudiantRepository extends JpaRepository<Etudiant , Long> {
+}
+
+Etudiant → etudiants
+Pour ce repository, Spring Data REST exposera automatiquement les deux points de
+terminaison suivants.
+❖ Ressource à élément unique : /etudiants/{id}
+❖ Ressource de la collection : /etudiants
+Architecture des composants
+
+A.Ettaoufik
+
+146
+
+SPRING DATA REST
+Fonctionnement
+Afin d'activer une ressource de recherche, il faut une méthode de requête au référentiel.
+@RepositoryRestResource
+
+public interface StudentRepository extends JpaRepository<Etudiant, Long> {
+List<Etudiant> findEtudiantsByName(@Param String nom);
+}
+
+Architecture des composants
+
+A.Ettaoufik
+
+147
+
+SPRING DATA REST PAGINATION AND SORTING
+Toutes les ressources Spring DATA Rest prennent en charge le mécanisme standard de
+pagination et de tri des données Spring, à condition que les référentiels s'étendent à
+partir de
+
+❖ JpaRepository
+ou
+❖ PagingAndSortingRepository
+
+Architecture des composants
+
+A.Ettaoufik
+
+148
+
+ANNOTATIONS
+❖
+
+@Entity : Une annotation JPA qui désigne que la classe va être stocker dans une table
+relationnelle
+
+❖
+
+@Data: génère le code au moment de la compilation
+
+❖
+
+@Id: Marque le champ comme l'identifiant unique de l'annonce (c'est-à-dire la clé primaire dans
+la base de données).
+
+❖
+
+@GeneratedValue: Indique à JPA que la base de données devra fournir sa valeur. Dans ce cas,
+la base de données générera automatiqument ( ) ce champ, peu importe comment (la stratégie
+pour le faire dépend de la base de données que vous utilisez). GenerationType.AUTO
+
+Architecture des composants
+
+A.Ettaoufik
+
+149
+
+ANNOTATIONS
+❖ @ManyToOne – @OneToMany : Relation entre entités
+❖ @Min : Indique d’un champ accepte uniquement les données qui ont une valeur
+minimale
+@Min (message = "Price cannot be negative", value = 0)
+
+❖ @Size: Indique qu'un champ accepte uniquement les valeurs dont la longueur est
+comprise dans une plage prédéfinie
+
+Architecture des composants
+
+A.Ettaoufik
+
+150
+
+ETAPES DE DÉVELOPPEMENT
+i.
+ii.
+iii.
+iv.
+
+Créer un projet Spring Boot
+Ajouter les dépendances de Spring Data Rest
+Créer une Entité JPA
+Créer Spring Data JPA Repository
+
+→ Pas de couche Controller et pas de Service
+
+Architecture des composants
+
+A.Ettaoufik
+
+151
+
+SPRING DATA REST - EXEMPLE
+1- Créer un nouveau projet
+
+Architecture des composants
+
+2- ajouter les dépendances
+
+A.Ettaoufik
+
+152
+
+SPRING DATA REST - EXEMPLE
+
+Architecture des composants
+
+A.Ettaoufik
+
+153
+
+SPRING DATA REST - EXEMPLE
+3- Ajouter une entité JPA
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Table(name="etudiants")
+public class Etudiant {
+@Id
+@GeneratedValue(strategy = GenerationType.AUTO)
+Long id;
+@Column(name="nom_etudiant", nullable=false)
+String nom;
+@Column(name="prenom_etudiant")
+String prenom;
+@Enumerated(EnumType.STRING)
+Genre genre;
+}
+Architecture des composants
+
+A.Ettaoufik
+
+Etudiant
+Id
+
+nom
+prenom
+genre
+
+public enum Genre {
+Homme,
+Femme
+}
+
+154
+
+SPRING DATA REST - EXEMPLE
+4- Créer Spring Data JAP Repository
+
+public interface EtudiantRepository extends JpaRepository<Etudiant,Long> {
+}
+
+Architecture des composants
+
+A.Ettaoufik
+
+155
+
+SPRING DATA REST - EXEMPLE
+5- Créer en enregistrer des étudiants dans la BDD
+@SpringBootApplication
+public class SpringDataBasicApplication implements CommandLineRunner {
+public static void main(String[] args) {
+SpringApplication.run(SpringDataBasicApplication.class, args);
+}
+@Autowired
+EtudiantRepository etudiantRepository;
+@Override
+public void run(String... args) throws Exception {
+Etudiant et1=Etudiant.builder()
+.nom("Adnani")
+.prenom("Morad")
+.genre(Genre.Homme)
+.build();
+etudiantRepository.save(et1);
+…
+}
+}
+Architecture des composants
+
+A.Ettaoufik
+
+156
+
+SPRING DATA REST - EXEMPLE
+6- Tester Rest APIs en utilisant POSTMAN
+
+Architecture des composants
+
+A.Ettaoufik
+
+157
+
+A.Ettaoufik
+
+158
+
+SPRING DATA REST - EXEMPLE
+7- Configurer le Base Path
+
+Architecture des composants
+
+SPRING DATA REST - EXEMPLE
+8- Changement du nom du path en utilisant l’annotation @RepositoryRestResource
+
+@RepositoryRestResource(path="students")
+public interface EtudiantRepository extends JpaRepository<Etudiant,Long> {
+}
+
+Architecture des composants
+
+A.Ettaoufik
+
+159
+
+A.Ettaoufik
+
+160
+
+SPRING DATA REST - EXEMPLE
+9- Pagination et trie
+❖ Pagination
+
+❖ Trie
+
+Architecture des composants
+
+SPRING DATA REST - EXEMPLE
+10- API Rest pour des requêtes
+
+@RepositoryRestResource(path="students")
+public interface EtudiantRepository extends JpaRepository<Etudiant,Long> {
+List<Etudiant> findEtudiantByNom(@Param("nom")String nom);
+}
+
+Architecture des composants
+
+A.Ettaoufik
+
+161
+
+A.Ettaoufik
+
+162
+
+SPRING DATA REST - EXEMPLE
+10- API Rest – Nouvel étudiant
+
+Architecture des composants
+
+SPRING DATA REST - EXEMPLE
+10- API Rest – Suppression & Modification
+
+Architecture des composants
+
+A.Ettaoufik
+
+163
+
+SPRING DATA REST- APPLICATION
+CRÉATION D'UNE API RESTFUL AVEC SPRING DATA REST
+
+GET
+Centre
+
+POST
+
+Model
+
+Repository
+Client
+
+PUT
+
+DELETE
+
+BD
+
+Etudiant
+
+Id
+
+Id
+
+Nom_centre
+
+nom
+
+adresse
+
+prenom
+Genre
+Id_centre*
+
+Architecture des composants
+
+A.Ettaoufik
+
+165
+
+AFFICHER H2 DANS LE CONSOLE
+spring.h2.console.enabled=true
+spring.datasource.username=12
+spring.datasource.password=
+spring.datasource.url=jdbc:h2:mem:centredb
+http://localhost:8080/h2-console
+
+Architecture des composants
+
+A.Ettaoufik
+
+166
+
+

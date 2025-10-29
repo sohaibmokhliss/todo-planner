@@ -37,26 +37,35 @@ async function enrichTasksWithRelations(
 
   const taskIds = tasks.map(task => task.id)
 
-  const [{ data: recurrences, error: recurrenceError }, { data: dependencies, error: dependenciesError }] =
-    await Promise.all([
-      supabase
-        .from('recurrence')
-        .select('*')
-        .in('task_id', taskIds),
-      supabase
-        .from('task_dependencies')
-        .select(`
-          *,
-          depends_on:tasks!task_dependencies_depends_on_task_id_fkey (
-            id,
-            title,
-            status,
-            priority,
-            due_date
-          )
-        `)
-        .in('task_id', taskIds),
-    ])
+  // Fetch all related data in a single parallel batch to avoid N+1 queries
+  const [
+    { data: recurrences, error: recurrenceError },
+    { data: dependencies, error: dependenciesError },
+    { data: subtasks, error: subtasksError }
+  ] = await Promise.all([
+    supabase
+      .from('recurrence')
+      .select('*')
+      .in('task_id', taskIds),
+    supabase
+      .from('task_dependencies')
+      .select(`
+        *,
+        depends_on:tasks!task_dependencies_depends_on_task_id_fkey (
+          id,
+          title,
+          status,
+          priority,
+          due_date
+        )
+      `)
+      .in('task_id', taskIds),
+    supabase
+      .from('subtasks')
+      .select('*')
+      .in('task_id', taskIds)
+      .order('position', { ascending: true })
+  ])
 
   if (recurrenceError) {
     return { data: [], error: recurrenceError.message }
@@ -66,6 +75,11 @@ async function enrichTasksWithRelations(
     return { data: [], error: dependenciesError.message }
   }
 
+  if (subtasksError) {
+    return { data: [], error: subtasksError.message }
+  }
+
+  // Build lookup maps for O(1) access
   const recurrenceByTask = new Map<string, Database['public']['Tables']['recurrence']['Row']>()
   recurrences?.forEach(recurrence => {
     recurrenceByTask.set(recurrence.task_id, recurrence)
@@ -78,10 +92,18 @@ async function enrichTasksWithRelations(
     dependenciesByTask.set(dependency.task_id, existing)
   })
 
+  const subtasksByTask = new Map<string, Database['public']['Tables']['subtasks']['Row'][]>()
+  subtasks?.forEach(subtask => {
+    const existing = subtasksByTask.get(subtask.task_id) || []
+    existing.push(subtask)
+    subtasksByTask.set(subtask.task_id, existing)
+  })
+
   const enrichedTasks: TaskWithRelations[] = tasks.map(task => ({
     ...task,
     recurrence: recurrenceByTask.get(task.id) ?? null,
     dependencies: dependenciesByTask.get(task.id) ?? [],
+    subtasks: subtasksByTask.get(task.id) ?? [],
   }))
 
   return { data: enrichedTasks, error: null }

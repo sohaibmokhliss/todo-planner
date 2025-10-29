@@ -66,7 +66,42 @@ export function useCreateProject() {
       }
       return result.data
     },
-    onSuccess: () => {
+    // Optimistic update: immediately add the project to the UI
+    onMutate: async (newProject) => {
+      // Cancel any outgoing refetches to avoid overwriting our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['projects'] })
+
+      // Snapshot the previous value
+      const previousProjects = queryClient.getQueryData(['projects'])
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(['projects'], (old: any) => {
+        if (!old) return old
+
+        // Create optimistic project with temporary ID
+        const optimisticProject = {
+          id: `temp-${Date.now()}`,
+          ...newProject,
+          user_id: 'temp',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: old.length,
+        }
+
+        return [...old, optimisticProject]
+      })
+
+      // Return context with the snapshot
+      return { previousProjects }
+    },
+    // If mutation fails, use the context returned from onMutate to roll back
+    onError: (err, newProject, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(['projects'], context.previousProjects)
+      }
+    },
+    // Always refetch after error or success to ensure data consistency
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
   })
@@ -83,7 +118,39 @@ export function useUpdateProject() {
       }
       return result.data
     },
-    onSuccess: (data) => {
+    // Optimistic update for project modifications
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['projects'] })
+      await queryClient.cancelQueries({ queryKey: ['projects', id] })
+
+      const previousProjects = queryClient.getQueryData(['projects'])
+      const previousProject = queryClient.getQueryData(['projects', id])
+
+      // Optimistically update projects list
+      queryClient.setQueryData(['projects'], (old: any) => {
+        if (!old) return old
+        return old.map((project: any) =>
+          project.id === id ? { ...project, ...data, updated_at: new Date().toISOString() } : project
+        )
+      })
+
+      // Optimistically update individual project
+      queryClient.setQueryData(['projects', id], (old: any) => {
+        if (!old) return old
+        return { ...old, ...data, updated_at: new Date().toISOString() }
+      })
+
+      return { previousProjects, previousProject }
+    },
+    onError: (err, { id }, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(['projects'], context.previousProjects)
+      }
+      if (context?.previousProject) {
+        queryClient.setQueryData(['projects', id], context.previousProject)
+      }
+    },
+    onSettled: (data) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       if (data?.id) {
         queryClient.invalidateQueries({ queryKey: ['projects', data.id] })
@@ -103,7 +170,26 @@ export function useDeleteProject() {
       }
       return result.data
     },
-    onSuccess: () => {
+    // Optimistic delete
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['projects'] })
+
+      const previousProjects = queryClient.getQueryData(['projects'])
+
+      // Optimistically remove the project
+      queryClient.setQueryData(['projects'], (old: any) => {
+        if (!old) return old
+        return old.filter((project: any) => project.id !== id)
+      })
+
+      return { previousProjects }
+    },
+    onError: (err, id, context) => {
+      if (context?.previousProjects) {
+        queryClient.setQueryData(['projects'], context.previousProjects)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
