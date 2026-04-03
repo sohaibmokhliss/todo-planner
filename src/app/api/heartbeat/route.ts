@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Fall back to a lightweight read so the keepalive still works
     // even if the optional heartbeat table has not been added yet.
-    if (heartbeatError.code === '42P01') {
+    if (heartbeatError.code === '42P01' || heartbeatError.code === 'PGRST205') {
       const { count, error: readError } = await supabase
         .from('users')
         .select('id', { count: 'exact', head: true })
