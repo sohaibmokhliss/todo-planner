@@ -55,7 +55,7 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {
   }
 
   const handleCreateTag = async () => {
-    if (!newTagName.trim()) return
+    if (!newTagName.trim() || createTag.isPending) return
 
     try {
       const result = await createTag.mutateAsync({
@@ -63,7 +63,8 @@ export function TagSelector({ selectedTags, onTagsChange }: TagSelectorProps) {
         color: newTagColor,
       })
       if (result) {
-        onTagsChange([...selectedTags, result])
+        const alreadySelected = selectedTags.some(tag => tag.id === result.id)
+        onTagsChange(alreadySelected ? selectedTags : [...selectedTags, result])
       }
       setNewTagName('')
       setNewTagColor(PRESET_COLORS[0])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useUpdateTask } from '@/hooks/useTasks'
 import { useProjects } from '@/hooks/useProjects'
 import { useTaskTags, useSetTaskTags } from '@/hooks/useTags'
@@ -33,23 +33,33 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
   )
   const [projectId, setProjectId] = useState<string>(task.project_id || '')
   const [selectedTags, setSelectedTags] = useState<Tag[]>([])
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const hasInitializedTagsRef = useRef(false)
 
   const updateTask = useUpdateTask()
   const { data: projects } = useProjects()
   const { data: taskTags } = useTaskTags(task.id)
   const setTaskTags = useSetTaskTags()
+  const isSubmitting = updateTask.isPending || setTaskTags.isPending
+
+  useEffect(() => {
+    hasInitializedTagsRef.current = false
+  }, [task.id])
 
   // Load existing tags when component mounts
   useEffect(() => {
-    if (taskTags) {
+    if (taskTags && !hasInitializedTagsRef.current) {
       setSelectedTags(taskTags)
+      hasInitializedTagsRef.current = true
     }
   }, [taskTags])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title.trim()) return
+    if (!title.trim() || isSubmitting) return
+
+    setSubmitError(null)
 
     try {
       const completedAt = status === 'done' ? (task.completed_at || new Date().toISOString()) : null
@@ -67,16 +77,28 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
         },
       })
 
-      // Update tags
-      await setTaskTags.mutateAsync({
-        taskId: task.id,
-        tagIds: selectedTags.map(tag => tag.id),
-      })
+      let tagAssignmentWarning: string | null = null
+
+      try {
+        await setTaskTags.mutateAsync({
+          taskId: task.id,
+          tagIds: selectedTags.map(tag => tag.id),
+        })
+      } catch (tagError) {
+        console.error('Task updated but tags failed to save:', tagError)
+        tagAssignmentWarning = 'Task updated, but its tags could not be saved.'
+      }
 
       onSuccess?.()
+
+      if (tagAssignmentWarning) {
+        window.alert(tagAssignmentWarning)
+      }
+
       onClose()
     } catch (error) {
       console.error('Failed to update task:', error)
+      setSubmitError(error instanceof Error ? error.message : 'Failed to update task. Please try again.')
     }
   }
 
@@ -88,6 +110,7 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Task</h2>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
           >
             <X size={20} />
@@ -230,27 +253,28 @@ export function TaskEditModal({ task, onClose, onSuccess }: TaskEditModalProps) 
           {/* Fixed Footer */}
           <div className="sticky bottom-0 z-10 border-t border-gray-200 bg-white px-6 py-4 dark:border-gray-700 dark:bg-gray-800">
             {/* Error message */}
-            {updateTask.isError && (
+            {(updateTask.isError || submitError) && (
               <div className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-                Failed to update task. Please try again.
+                {submitError || 'Failed to update task. Please try again.'}
               </div>
             )}
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
               <button
-                type="button"
-                onClick={onClose}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
               <button
                 type="submit"
-                disabled={!title.trim() || updateTask.isPending}
+                disabled={!title.trim() || isSubmitting}
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-indigo-500 dark:hover:bg-indigo-400"
               >
-                {updateTask.isPending ? 'Saving...' : 'Save Changes'}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </div>

@@ -1,14 +1,32 @@
 import { getCurrentUser } from '@/lib/actions/auth'
+import { getSession } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import { ProfileForm } from '@/components/profile/ProfileForm'
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm'
 import { User } from 'lucide-react'
 
 export default async function ProfilePage() {
+  const session = await getSession()
   const user = await getCurrentUser()
 
-  if (!user) {
+  if (!session) {
     redirect('/login')
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-full flex-col overflow-y-auto">
+        <div className="mx-auto w-full max-w-4xl p-6">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            <h1 className="mb-2 text-xl font-semibold">Profile temporarily unavailable</h1>
+            <p className="text-sm">
+              Your session is still active, but the profile record could not be loaded right now.
+              Refresh the page in a moment. If this keeps happening, sign out and sign back in.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -43,7 +61,7 @@ export default async function ProfilePage() {
               <div className="flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-700">
                 <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Account created</dt>
                 <dd className="text-sm text-gray-900 dark:text-white">
-                  {new Date(user.created_at).toLocaleDateString('en-US', {
+                  {new Date(user.created_at!).toLocaleDateString('en-US', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',

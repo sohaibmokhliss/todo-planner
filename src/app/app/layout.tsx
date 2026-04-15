@@ -1,10 +1,10 @@
-import { getCurrentUser } from '@/lib/actions/auth'
+import { getCurrentUserWithSessionFallback } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'
 import { AppHeader } from '@/components/layout/AppHeader'
 import { NotificationManager } from '@/components/notifications/NotificationManager'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserWithSessionFallback()
 
   if (!user) {
     redirect('/login')

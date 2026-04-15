@@ -1,12 +1,12 @@
-import { getCurrentUser } from '@/lib/actions/auth'
+import { getSession } from '@/lib/auth/session'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { CheckCircle2, Calendar, Tag, Repeat, Bell, LayoutList } from 'lucide-react'
 
 export default async function Home() {
-  const user = await getCurrentUser()
+  const session = await getSession()
 
-  if (user) {
+  if (session) {
     redirect('/app')
   }
 

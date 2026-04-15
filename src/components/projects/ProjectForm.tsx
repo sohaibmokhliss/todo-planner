@@ -32,6 +32,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
   const [description, setDescription] = useState(project?.description || '')
   const [color, setColor] = useState(project?.color || '#6366f1')
   const [emoji, setEmoji] = useState(project?.emoji || '📁')
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const createProject = useCreateProject()
   const updateProject = useUpdateProject()
@@ -41,7 +42,9 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!name.trim()) return
+    if (!name.trim() || createProject.isPending || updateProject.isPending) return
+
+    setSubmitError(null)
 
     try {
       if (isEdit) {
@@ -67,6 +70,7 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
       onClose()
     } catch (error) {
       console.error('Failed to save project:', error)
+      setSubmitError(error instanceof Error ? error.message : `Failed to ${isEdit ? 'update' : 'create'} project. Please try again.`)
     }
   }
 
@@ -160,9 +164,9 @@ export function ProjectForm({ project, onClose, onSuccess }: ProjectFormProps) {
           </div>
 
           {/* Error message */}
-          {(createProject.isError || updateProject.isError) && (
+          {(createProject.isError || updateProject.isError || submitError) && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-              Failed to {isEdit ? 'update' : 'create'} project. Please try again.
+              {submitError || `Failed to ${isEdit ? 'update' : 'create'} project. Please try again.`}
             </div>
           )}
 

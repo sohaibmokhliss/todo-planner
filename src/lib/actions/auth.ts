@@ -13,6 +13,16 @@ import {
 import { createSession, deleteSession, getSession } from '@/lib/auth/session'
 import { generateResetToken, getResetTokenExpiration } from '@/lib/auth/tokens'
 
+export interface AuthenticatedUser {
+  id: string
+  username: string
+  email: string | null
+  full_name: string | null
+  avatar_url: string | null
+  created_at: string | null
+  isFallback?: boolean
+}
+
 /**
  * Sign up a new user with username and password
  * Email is optional and only used for password recovery
@@ -166,7 +176,36 @@ export async function getCurrentUser() {
     return null
   }
 
-  return user
+  return user satisfies AuthenticatedUser
+}
+
+/**
+ * Get a minimal authenticated user object from the session when the full
+ * profile lookup is unavailable. This keeps authenticated shells stable
+ * instead of bouncing users back to login on transient data issues.
+ */
+export async function getCurrentUserWithSessionFallback(): Promise<AuthenticatedUser | null> {
+  const session = await getSession()
+
+  if (!session) {
+    return null
+  }
+
+  const user = await getCurrentUser()
+
+  if (user) {
+    return user
+  }
+
+  return {
+    id: session.userId,
+    username: session.username,
+    email: null,
+    full_name: null,
+    avatar_url: null,
+    created_at: null,
+    isFallback: true,
+  }
 }
 
 /**
@@ -279,6 +318,17 @@ export async function resetPassword(formData: FormData) {
   // Hash the new password
   const passwordHash = await hashPassword(newPassword)
 
+  const { data: userBeforeUpdate, error: userReadError } = await supabase
+    .from('users')
+    .select('password_hash')
+    .eq('id', resetToken.user_id)
+    .single()
+
+  if (userReadError || !userBeforeUpdate) {
+    console.error('Error reading current password before reset:', userReadError)
+    return { error: 'Failed to prepare password reset. Please try again.' }
+  }
+
   // Update the user's password
   const { error: updateError } = await supabase
     .from('users')
@@ -291,10 +341,25 @@ export async function resetPassword(formData: FormData) {
   }
 
   // Mark the token as used
-  await supabase
+  const { error: markUsedError } = await supabase
     .from('password_reset_tokens')
     .update({ used: true })
     .eq('id', resetToken.id)
+
+  if (markUsedError) {
+    console.error('Error marking password reset token as used:', markUsedError)
+
+    const { error: rollbackError } = await supabase
+      .from('users')
+      .update({ password_hash: userBeforeUpdate.password_hash })
+      .eq('id', resetToken.user_id)
+
+    if (rollbackError) {
+      console.error('Error rolling back password reset after token update failure:', rollbackError)
+    }
+
+    return { error: 'Failed to finalize password reset. Please try again.' }
+  }
 
   return {
     success: true,

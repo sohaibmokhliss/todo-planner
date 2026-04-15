@@ -310,6 +310,40 @@ export async function setTaskTags(taskId: string, tagIds: string[]) {
     return { error: 'Cannot modify tags for this task' }
   }
 
+  const normalizedTagIds = [...new Set(tagIds)]
+
+  const { data: existingTaskTags, error: existingTaskTagsError } = await adminClient
+    .from('task_tags')
+    .select('tag_id')
+    .eq('task_id', taskId)
+
+  if (existingTaskTagsError) {
+    console.error('Error fetching existing task tags:', existingTaskTagsError)
+    return { error: existingTaskTagsError.message }
+  }
+
+  if (normalizedTagIds.length > 0) {
+    const { data: ownedTags, error: ownedTagsError } = await supabase
+      .from('tags')
+      .select('id')
+      .in('id', normalizedTagIds)
+      .eq('user_id', session.userId)
+
+    if (ownedTagsError) {
+      console.error('Error validating tag ownership:', ownedTagsError)
+      return { error: ownedTagsError.message }
+    }
+
+    const ownedTagIds = new Set((ownedTags ?? []).map(tag => tag.id))
+    const invalidTagIds = normalizedTagIds.filter(tagId => !ownedTagIds.has(tagId))
+
+    if (invalidTagIds.length > 0) {
+      return { error: 'One or more selected tags are invalid for this user' }
+    }
+  }
+
+  const previousTagIds = (existingTaskTags ?? []).map(taskTag => taskTag.tag_id)
+
   const { error: deleteError } = await adminClient.from('task_tags').delete().eq('task_id', taskId)
 
   if (deleteError) {
@@ -317,13 +351,22 @@ export async function setTaskTags(taskId: string, tagIds: string[]) {
     return { error: deleteError.message }
   }
 
-  if (tagIds.length > 0) {
+  if (normalizedTagIds.length > 0) {
     const { error } = await adminClient
       .from('task_tags')
-      .insert(tagIds.map(tagId => ({ task_id: taskId, tag_id: tagId })))
+      .insert(normalizedTagIds.map(tagId => ({ task_id: taskId, tag_id: tagId })))
 
     if (error) {
       console.error('Error setting task tags:', error)
+      if (previousTagIds.length > 0) {
+        const { error: restoreError } = await adminClient
+          .from('task_tags')
+          .insert(previousTagIds.map(tagId => ({ task_id: taskId, tag_id: tagId })))
+
+        if (restoreError) {
+          console.error('Error restoring task tags after failed update:', restoreError)
+        }
+      }
       return { error: error.message }
     }
   }

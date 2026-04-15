@@ -4,10 +4,28 @@
 
 import { SignJWT, jwtVerify } from 'jose'
 
-// Get JWT secret from environment
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
-)
+const FALLBACK_JWT_SECRET = 'your-secret-key-change-this-in-production'
+
+let hasWarnedAboutFallbackSecret = false
+
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+
+  if (secret) {
+    return new TextEncoder().encode(secret)
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET is required in production')
+  }
+
+  if (!hasWarnedAboutFallbackSecret) {
+    hasWarnedAboutFallbackSecret = true
+    console.warn('JWT_SECRET is not set. Falling back to the development default secret.')
+  }
+
+  return new TextEncoder().encode(FALLBACK_JWT_SECRET)
+}
 
 // Token expiration times
 const ACCESS_TOKEN_EXPIRES_IN = '24h' // 24 hours
@@ -35,7 +53,7 @@ export async function generateAccessToken(payload: {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(ACCESS_TOKEN_EXPIRES_IN)
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret())
 }
 
 /**
@@ -47,7 +65,7 @@ export async function verifyAccessToken(
   token: string
 ): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, getJwtSecret())
     // Validate payload has required fields
     if (payload && typeof payload.userId === 'string' && typeof payload.username === 'string') {
       return payload as unknown as JWTPayload

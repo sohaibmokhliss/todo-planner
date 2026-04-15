@@ -2,13 +2,12 @@
 
 import { signIn } from '@/lib/actions/auth'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -28,10 +27,7 @@ export function LoginForm() {
       const destination =
         requestedPath && requestedPath.startsWith('/') ? requestedPath : '/app'
 
-      // Allow auth cookies to settle before navigation
-      await new Promise(resolve => setTimeout(resolve, 200))
-      router.replace(destination)
-      router.refresh()
+      window.location.assign(destination)
     } else {
       setError('Unexpected response from server')
       setLoading(false)

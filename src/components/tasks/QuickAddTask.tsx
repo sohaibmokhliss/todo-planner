@@ -12,10 +12,13 @@ interface QuickAddTaskProps {
 export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
   const [title, setTitle] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const createTask = useCreateTask()
 
   const handleSubmit = async () => {
-    if (!title.trim()) return
+    if (!title.trim() || createTask.isPending) return
+
+    setSubmitError(null)
 
     try {
       await createTask.mutateAsync({
@@ -29,6 +32,7 @@ export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
       onSuccess?.()
     } catch (error) {
       console.error('Failed to create task:', error)
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create task. Press Enter to try again.')
     }
   }
 
@@ -63,9 +67,10 @@ export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={() => {
-            if (!title.trim()) {
-              setIsExpanded(false)
-            }
+          if (!title.trim() && !createTask.isPending && !submitError) {
+            setIsExpanded(false)
+            setSubmitError(null)
+          }
           }}
           placeholder="What needs to be done? (Press Enter to save, Esc to cancel)"
           className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none dark:text-white dark:placeholder-gray-400"
@@ -75,9 +80,9 @@ export function QuickAddTask({ projectId, onSuccess }: QuickAddTaskProps) {
           <span className="text-xs text-gray-500 dark:text-gray-400">Saving...</span>
         )}
       </div>
-      {createTask.isError && (
+      {(createTask.isError || submitError) && (
         <p className="mt-2 text-xs text-red-600 dark:text-red-400">
-          Failed to create task. Press Enter to try again.
+          {submitError || 'Failed to create task. Press Enter to try again.'}
         </p>
       )}
     </div>

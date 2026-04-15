@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { generateAccessToken } from '@/lib/auth/jwt'
+import { setSessionCookie } from '@/lib/auth/session'
 import { verifyAccessToken } from '@/lib/auth/jwt'
 
 const SESSION_COOKIE_NAME = 'session'
@@ -14,6 +16,7 @@ export async function updateSession(request: NextRequest) {
 
   // Verify the token
   let user: { userId: string; username: string } | null = null
+  let shouldClearInvalidSessionCookie = false
   if (token) {
     const payload = await verifyAccessToken(token)
     if (payload?.userId && payload?.username) {
@@ -21,6 +24,8 @@ export async function updateSession(request: NextRequest) {
         userId: payload.userId,
         username: payload.username,
       }
+    } else {
+      shouldClearInvalidSessionCookie = true
     }
   }
 
@@ -42,6 +47,21 @@ export async function updateSession(request: NextRequest) {
   } else {
     // Allow the request to proceed
     response = NextResponse.next()
+  }
+
+  // Refresh active sessions to avoid abrupt hard expiry for users
+  // who continue using the app throughout the day.
+  if (user) {
+    const refreshedToken = await generateAccessToken(user)
+    setSessionCookie(refreshedToken, response.cookies)
+  } else if (shouldClearInvalidSessionCookie) {
+    response.cookies.set(SESSION_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    })
   }
 
   return response

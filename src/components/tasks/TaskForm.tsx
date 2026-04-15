@@ -24,6 +24,7 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
   const [dueDate, setDueDate] = useState('')
   const [projectId, setProjectId] = useState<string>('')
   const [selectedTags, setSelectedTags] = useState<Tag[]>(defaultTags)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const defaultTagIdsKey = useMemo(() => {
     if (defaultTags.length === 0) return ''
@@ -37,6 +38,7 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
   const createTask = useCreateTask()
   const { data: projects } = useProjects()
   const setTaskTags = useSetTaskTags()
+  const isSubmitting = createTask.isPending || setTaskTags.isPending
 
   // Sync selected tags only when the default tag ids change, avoiding resets on identical arrays
   useEffect(() => {
@@ -51,7 +53,9 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title.trim()) return
+    if (!title.trim() || isSubmitting) return
+
+    setSubmitError(null)
 
     try {
       const newTask = await createTask.mutateAsync({
@@ -63,12 +67,20 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
         project_id: projectId || null,
       })
 
-      // Assign tags if any are selected
+      let tagAssignmentWarning: string | null = null
+
+      // Tag assignment is a follow-up step. If it fails after task creation,
+      // the task should still be treated as successfully created.
       if (newTask && selectedTags.length > 0) {
-        await setTaskTags.mutateAsync({
-          taskId: newTask.id,
-          tagIds: selectedTags.map(tag => tag.id),
-        })
+        try {
+          await setTaskTags.mutateAsync({
+            taskId: newTask.id,
+            tagIds: selectedTags.map(tag => tag.id),
+          })
+        } catch (tagError) {
+          console.error('Task created but tags failed to save:', tagError)
+          tagAssignmentWarning = 'Task created, but its tags could not be saved.'
+        }
       }
 
       setTitle('')
@@ -79,9 +91,15 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
       setProjectId('')
       setSelectedTags([])
       onSuccess?.()
+
+      if (tagAssignmentWarning) {
+        window.alert(tagAssignmentWarning)
+      }
+
       onClose()
     } catch (error) {
       console.error('Failed to create task:', error)
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create task. Please try again.')
     }
   }
 
@@ -92,6 +110,7 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
           <h2 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent dark:from-indigo-400 dark:to-purple-400">Create New Task</h2>
           <button
             onClick={onClose}
+            disabled={isSubmitting}
             className="rounded-lg p-2 text-gray-500 transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-900/20 dark:hover:text-red-400"
           >
             <X size={20} />
@@ -209,9 +228,9 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
           />
 
           {/* Error message */}
-          {createTask.isError && (
+          {(createTask.isError || submitError) && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-400">
-              Failed to create task. Please try again.
+              {submitError || 'Failed to create task. Please try again.'}
             </div>
           )}
 
@@ -220,16 +239,17 @@ export function TaskForm({ onClose, onSuccess, defaultTags = [] }: TaskFormProps
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!title.trim() || createTask.isPending}
+              disabled={!title.trim() || isSubmitting}
               className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:scale-105 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
             >
-              {createTask.isPending ? 'Creating...' : 'Create Task'}
+              {isSubmitting ? 'Saving...' : 'Create Task'}
             </button>
           </div>
         </form>

@@ -69,6 +69,7 @@ export function useCreateTag() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
 }
@@ -86,6 +87,7 @@ export function useUpdateTag() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
 }
@@ -103,6 +105,8 @@ export function useDeleteTag() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
+      queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['task-tags'] })
     },
   })
 }
@@ -121,6 +125,7 @@ export function useAddTagToTask() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
       queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
@@ -140,6 +145,7 @@ export function useRemoveTagFromTask() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
       queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })
@@ -159,6 +165,7 @@ export function useSetTaskTags() {
     onSuccess: (_, { taskId }) => {
       queryClient.invalidateQueries({ queryKey: ['task-tags', taskId] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
       queryClient.invalidateQueries({ queryKey: ['tags', 'with-stats'] })
     },
   })

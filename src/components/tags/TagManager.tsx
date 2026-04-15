@@ -41,9 +41,10 @@ export function TagManager() {
     name: '',
     color: PRESET_COLORS[0],
   })
+  const isMutating = createTag.isPending || updateTag.isPending || deleteTag.isPending
 
   const handleCreate = async () => {
-    if (!formData.name.trim()) return
+    if (!formData.name.trim() || createTag.isPending) return
 
     try {
       await createTag.mutateAsync(formData)
@@ -55,7 +56,7 @@ export function TagManager() {
   }
 
   const handleUpdate = async (id: string) => {
-    if (!formData.name.trim()) return
+    if (!formData.name.trim() || updateTag.isPending) return
 
     try {
       await updateTag.mutateAsync({ id, data: formData })
@@ -67,6 +68,7 @@ export function TagManager() {
   }
 
   const handleDelete = async (id: string) => {
+    if (deleteTag.isPending) return
     if (!confirm('Delete this tag? It will be removed from all tasks.')) return
 
     try {
@@ -103,6 +105,7 @@ export function TagManager() {
         </h3>
         <button
           onClick={() => setShowCreateForm(!showCreateForm)}
+          disabled={isMutating}
           className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
         >
           <Plus size={16} />
@@ -162,6 +165,7 @@ export function TagManager() {
                   setShowCreateForm(false)
                   setFormData({ name: '', color: PRESET_COLORS[0] })
                 }}
+                disabled={createTag.isPending}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancel
@@ -207,12 +211,14 @@ export function TagManager() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleUpdate(tag.id)}
+                      disabled={updateTag.isPending}
                       className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700"
                     >
                       Save
                     </button>
                     <button
                       onClick={cancelEdit}
+                      disabled={updateTag.isPending}
                       className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                     >
                       Cancel
@@ -234,6 +240,7 @@ export function TagManager() {
                   </span>
                   <button
                     onClick={() => startEdit(tag)}
+                    disabled={isMutating}
                     className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
                     title="Edit tag"
                   >
@@ -241,6 +248,7 @@ export function TagManager() {
                   </button>
                   <button
                     onClick={() => handleDelete(tag.id)}
+                    disabled={isMutating}
                     className="text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                     title="Delete tag"
                   >
